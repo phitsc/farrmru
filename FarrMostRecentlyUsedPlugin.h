@@ -16,6 +16,7 @@ struct Options
     Options(const OptionsFile& optionsFile);
     void update(const OptionsFile& optionsFile);
 
+    bool ignoreNetworkFiles;
     bool ignoreDirectories;
 };
 
@@ -60,6 +61,7 @@ private:
 
     static void removeInvalidStuff(std::string& path);
 
+    static bool isNetworkFile(const std::string& path);
     static bool isDirectory(const std::string& path);
 
     Items _items;

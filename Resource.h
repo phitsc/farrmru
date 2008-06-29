@@ -4,6 +4,8 @@
 //
 #define IDD_DIALOG_OPTIONS              3000
 #define IDC_CHECK_IGNORE_DIRECTORIES    3001
+#define IDC_CHECK_IGNORE_DIRECTORIES2   3002
+#define IDC_CHECK_IGNORE_NETWORK_FILES  3002
 
 // Next default values for new objects
 // 

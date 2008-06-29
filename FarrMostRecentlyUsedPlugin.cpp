@@ -25,6 +25,7 @@ Options::Options(const OptionsFile& optionsFile)
 
 void Options::update(const OptionsFile& optionsFile)
 {
+    ignoreNetworkFiles = optionsFile.getValue("IgnoreNetworkFiles", true);
     ignoreDirectories = optionsFile.getValue("IgnoreDirectories", true);
 }
 
@@ -353,6 +354,14 @@ void FarrMostRecentlyUsedPlugin::resolveLinks(ItemList& itemList)
 
 //-----------------------------------------------------------------------
 
+bool FarrMostRecentlyUsedPlugin::isNetworkFile(const std::string& path)
+{
+    bool isNetworkFile = (PathIsUNC(path.c_str()) == TRUE);
+    return isNetworkFile;
+}
+
+//-----------------------------------------------------------------------
+
 bool FarrMostRecentlyUsedPlugin::isDirectory(const std::string& path)
 {
     bool isDirectory = ((GetFileAttributes(path.c_str()) & FILE_ATTRIBUTE_DIRECTORY) == FILE_ATTRIBUTE_DIRECTORY);
@@ -363,6 +372,11 @@ bool FarrMostRecentlyUsedPlugin::isDirectory(const std::string& path)
 
 void FarrMostRecentlyUsedPlugin::filterItems(ItemList& itemList, const std::string& searchString)
 {
+    if(_options.ignoreNetworkFiles)
+    {
+        itemList.remove_if(isNetworkFile);
+    }
+
     if(_options.ignoreDirectories)
     {
         itemList.remove_if(isDirectory);

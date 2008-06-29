@@ -35,6 +35,7 @@ private:
 
     LRESULT onInitDialog(UINT, WPARAM, LPARAM, BOOL&)
     {
+        initializeCheckBox(_ignoreNetworkFilesCheck, IDC_CHECK_IGNORE_NETWORK_FILES, "IgnoreNetworkFiles", true);
         initializeCheckBox(_ignoreDirectoriesCheck, IDC_CHECK_IGNORE_DIRECTORIES, "IgnoreDirectories", true);
 
         return 0;
@@ -42,6 +43,7 @@ private:
 
     LRESULT onOk(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/)
     {
+        storeCheckBoxValue(_ignoreNetworkFilesCheck, "IgnoreNetworkFiles");
         storeCheckBoxValue(_ignoreDirectoriesCheck, "IgnoreDirectories");
 
         EndDialog(IDOK);
@@ -58,6 +60,7 @@ private:
 private:
     OptionsFile& _optionsFile;
 
+    CButton _ignoreNetworkFilesCheck;
     CButton _ignoreDirectoriesCheck;
 };
 
