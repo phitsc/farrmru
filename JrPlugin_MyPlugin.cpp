@@ -527,7 +527,9 @@ PREFUNCDEF BOOL EFuncName_Request_ItemResultByIndex(int resultindex, char *destb
 
     const FarrMostRecentlyUsedPlugin::Item& item = farrMostRecentlyUsedPlugin->getItem(resultindex);
 
-    strncpy(destbuf_groupname, item.first.c_str(), maxlen);
+    const bool showGroupName = farrMostRecentlyUsedPlugin->showGroupName();
+    strncpy(destbuf_groupname, showGroupName ? item.first.c_str() : "", maxlen);
+
     strncpy(destbuf_path, item.second.c_str(), maxlen);
 
     strncpy(destbuf_caption, PathFindFileName(item.second.c_str()), maxlen);

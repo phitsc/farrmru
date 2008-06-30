@@ -87,12 +87,29 @@ void FarrMostRecentlyUsedPlugin::search(const std::string& rawSearchString, cons
     OrderedStringCollection options;
     OrderedStringCollection extensions;
     extractOptionsAndExtensions(rawSearchString, options, extensions);
+
+    const bool forceSortByName = (options.find("byname") != options.end());
+    options.erase("byname");
+
+    const bool forceSortByDate = (options.find("bydate") != options.end());
+    options.erase("bydate");
+
+    Options::SortMode sortMode = _options.sortMode;
+    if(forceSortByName)
+    {
+        sortMode = Options::Sort_Alphabetically;
+    }
+    else if(forceSortByDate)
+    {
+        sortMode = Options::Sort_TimeLastModified;
+    }
+
     if(options.empty())
     {
         // use recent folder
         addRecentDocuments(itemList);
 
-        if(needsSorting && (_options.sortMode == Options::TimeLastModified))
+        if(needsSorting && (sortMode == Options::Sort_TimeLastModified))
         {
             sortItemsLastModified(itemList);
 
@@ -130,7 +147,7 @@ void FarrMostRecentlyUsedPlugin::search(const std::string& rawSearchString, cons
             }
         }
 
-        if(needsSorting && (_options.sortMode == Options::TimeLastModified))
+        if(needsSorting && (sortMode == Options::Sort_TimeLastModified))
         {
             needsSorting = false;
         }
@@ -138,7 +155,7 @@ void FarrMostRecentlyUsedPlugin::search(const std::string& rawSearchString, cons
 
     filterItems(itemList, searchString, extensions);
 
-    if(needsSorting && (_options.sortMode == Options::Alphabetically))
+    if(needsSorting && (sortMode == Options::Sort_Alphabetically))
     {
         sortItemsAlphabetically(itemList);
     }

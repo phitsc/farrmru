@@ -13,9 +13,11 @@ Options::Options(const OptionsFile& optionsFile)
 
 void Options::update(const OptionsFile& optionsFile)
 {
-    ignoreUNCPaths = optionsFile.getValue("IgnoreUNCPaths", true);
     ignoreDirectories = optionsFile.getValue("IgnoreDirectories", true);
-    sortMode = (SortMode)optionsFile.getValue("SortMode", (long)NoSorting);
+    includeUNCPaths = optionsFile.getValue("IncludeUNCPaths", true);
+    simpleDirectoryCheck = optionsFile.getValue("SimpleDirectoryCheck", false);
+    showGroupName = optionsFile.getValue("ShowGroupName", false);
+    sortMode = (SortMode)optionsFile.getValue("SortMode", (long)Sort_NoSorting);
 }
 
 //-----------------------------------------------------------------------

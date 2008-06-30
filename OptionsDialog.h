@@ -35,11 +35,13 @@ private:
 
     LRESULT onInitDialog(UINT, WPARAM, LPARAM, BOOL&)
     {
-        initializeCheckBox(_ignoreUNCPathsCheck, IDC_CHECK_IGNORE_NETWORK_FILES, "IgnoreUNCPaths", true);
         initializeCheckBox(_ignoreDirectoriesCheck, IDC_CHECK_IGNORE_DIRECTORIES, "IgnoreDirectories", true);
+        initializeCheckBox(_includeUNCPathsCheck, IDC_CHECK_INCLUDE_NETWORK_FILES, "IncludeUNCPaths", true);
+        initializeCheckBox(_simpelDirectoryCheckCheck, IDC_CHECK_SIMPLE_DIR_CHECK, "SimpleDirectoryCheck", true);
+        initializeCheckBox(_showGroupNameCheck, IDC_CHECK_SHOW_GROUP_NAME, "ShowGroupName", false);
 
         _sortNoneRadio = GetDlgItem(IDC_RADIO_NOSORTING);
-        _sortLastAccessedRadio = GetDlgItem(IDC_RADIO_SORT_DATELASTACCESSED);
+        _sortLastAccessedRadio = GetDlgItem(IDC_RADIO_SORT_DATELASTMODIFIED);
         _sortAlphabeticallyRadio = GetDlgItem(IDC_RADIO_SORT_ALPHA);
 
         switch(_optionsFile.getValue("SortMode", 0L))
@@ -62,8 +64,10 @@ private:
 
     LRESULT onOk(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/)
     {
-        storeCheckBoxValue(_ignoreUNCPathsCheck, "IgnoreUNCPaths");
         storeCheckBoxValue(_ignoreDirectoriesCheck, "IgnoreDirectories");
+        storeCheckBoxValue(_includeUNCPathsCheck, "IncludeUNCPaths");
+        storeCheckBoxValue(_simpelDirectoryCheckCheck, "SimpleDirectoryCheck");
+        storeCheckBoxValue(_showGroupNameCheck, "ShowGroupName");
 
         if(_sortNoneRadio.GetCheck() == BST_CHECKED)
         {
@@ -92,8 +96,10 @@ private:
 private:
     OptionsFile& _optionsFile;
 
-    CButton _ignoreUNCPathsCheck;
     CButton _ignoreDirectoriesCheck;
+    CButton _includeUNCPathsCheck;
+    CButton _simpelDirectoryCheckCheck;
+    CButton _showGroupNameCheck;
 
     CButton _sortNoneRadio;
     CButton _sortLastAccessedRadio;

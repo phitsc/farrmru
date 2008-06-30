@@ -28,6 +28,11 @@ public:
     Items::size_type getItemCount() const;
     const Item& getItem(const Items::size_type& index) const;
 
+    bool showGroupName() const
+    {
+        return _options.showGroupName;
+    }
+
     void showOptions();
 
 private:

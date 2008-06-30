@@ -45,7 +45,7 @@ bool CompareName::operator ()(const Item& leftItem, const Item& rightItem) const
 
 bool NeedsToBeRemoved::operator()(const Item& item) const
 {
-    if(_options.ignoreUNCPaths && isUNCPath(item.second))
+    if(!_options.includeUNCPaths && isUNCPath(item.second))
     {
         return true;
     }
@@ -79,10 +79,25 @@ bool NeedsToBeRemoved::isUNCPath(const std::string& path)
 
 //-----------------------------------------------------------------------
 
-bool NeedsToBeRemoved::isDirectory(const std::string& path)
+bool NeedsToBeRemoved::isDirectory(const std::string& path) const
 {
-    bool isDirectory = ((GetFileAttributes(path.c_str()) & FILE_ATTRIBUTE_DIRECTORY) == FILE_ATTRIBUTE_DIRECTORY);
-    return isDirectory;
+    if(_options.simpleDirectoryCheck && isUNCPath(path))
+    {
+        std::string::size_type pos = path.find_last_of(".\\/");
+        if(pos != std::string::npos)
+        {
+            return (path[pos] != '.');
+        }
+        else
+        {
+            return true;
+        }
+    }
+    else
+    {
+        bool isDirectory = ((GetFileAttributes(path.c_str()) & FILE_ATTRIBUTE_DIRECTORY) == FILE_ATTRIBUTE_DIRECTORY);
+        return isDirectory;
+    }
 }
 
 //-----------------------------------------------------------------------
