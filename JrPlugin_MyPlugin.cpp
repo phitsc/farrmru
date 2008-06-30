@@ -507,7 +507,6 @@ PREFUNCDEF BOOL EFuncName_Request_LockResults(BOOL dolock)
 PREFUNCDEF BOOL EFuncName_Request_ItemResultByIndex(int resultindex, char *destbuf_path, char *destbuf_caption, char *destbuf_groupname, char *destbuf_iconfilename, void** tagvoidpp, int maxlen, E_ResultPostProcessingT *resultpostprocmodep, int* /*scorep*/, E_EntryTypeT *entrytypep)
 {
     // clear values sample:
-    strcpy(destbuf_groupname, "");
     *tagvoidpp = NULL;
 
     // how result is handled
@@ -516,7 +515,7 @@ PREFUNCDEF BOOL EFuncName_Request_ItemResultByIndex(int resultindex, char *destb
     // return E_ResultPostProcessing_MatchAgainstSearch if the host should evaluate the result and decide whether to show it based on match of search words
     //
     // in this case we just return all bookmarks and let host do the matching
-    *resultpostprocmodep = E_ResultPostProcessing_MatchAgainstSearch;
+    *resultpostprocmodep = E_ResultPostProcessing_ImmediateDisplay;
 
     // do we want to modify the score assigned by host?  usually not.
     // *scorep+=100;
@@ -526,15 +525,16 @@ PREFUNCDEF BOOL EFuncName_Request_ItemResultByIndex(int resultindex, char *destb
 
     // ok fill the result data
 
-    const std::string& item = farrMostRecentlyUsedPlugin->getItem(resultindex);
+    const FarrMostRecentlyUsedPlugin::Item& item = farrMostRecentlyUsedPlugin->getItem(resultindex);
 
-    strncpy(destbuf_path, item.c_str(), maxlen);
+    strncpy(destbuf_groupname, item.first.c_str(), maxlen);
+    strncpy(destbuf_path, item.second.c_str(), maxlen);
 
-    strncpy(destbuf_caption, PathFindFileName(item.c_str()), maxlen);
+    strncpy(destbuf_caption, PathFindFileName(item.second.c_str()), maxlen);
 
     // IF you want to return an icon for this item do so here by returning icon filename
     // by default we return the icon we use for the plugin
-    strncpy(destbuf_iconfilename, item.c_str(), maxlen);
+    strncpy(destbuf_iconfilename, item.second.c_str(), maxlen);
 
     // ok filled one
     return TRUE;

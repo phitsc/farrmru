@@ -223,6 +223,14 @@
 				</FileConfiguration>
 			</File>
 			<File
+				RelativePath=".\Options.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\SortingAndFiltering.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\stdafx.cpp"
 				>
 				<FileConfiguration
@@ -270,6 +278,10 @@
 			</File>
 			<File
 				RelativePath=".\JrPluginFuncs_FARR.h"
+				>
+			</File>
+			<File
+				RelativePath=".\Options.h"
 				>
 			</File>
 			<File

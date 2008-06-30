@@ -1,63 +1,60 @@
 #pragma once
 
 #include <string>
+#include <locale>
+#include <set>
 
 #ifdef min
 #undef min
 #endif
 #include <algorithm>
 
+#include "Options.h"
+
+typedef std::pair<std::string, std::string> Item;
+
 //-----------------------------------------------------------------------
 
-class LastModified
+class CompareLastModified
 {
 public:
-    bool operator()(const std::string& left, const std::string& right) const
-    {
-        HANDLE leftFile = openFile(left);
-        HANDLE rightFile = openFile(right);
-        if((leftFile != 0) && (rightFile != 0))
-        {
-            BY_HANDLE_FILE_INFORMATION leftInfo = { 0 };
-            bool leftOk = (GetFileInformationByHandle(leftFile, &leftInfo) == TRUE);
-
-            BY_HANDLE_FILE_INFORMATION rightInfo = { 0 };
-            bool rightOk = (GetFileInformationByHandle(rightFile, &rightInfo) == TRUE);
-
-            if(leftOk && rightOk)
-            {
-                return (CompareFileTime(&leftInfo.ftLastWriteTime, &rightInfo.ftLastWriteTime) >= 0);
-            }
-        }
-
-        return false;
-    }
+    bool operator()(const Item& leftItem, const Item& rightItem) const;
 
 private:
-    HANDLE openFile(const std::string& fileName) const
-    {
-        return CreateFile(fileName.c_str(), GENERIC_READ, FILE_SHARE_READ, 0, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, 0);
-    }
+    HANDLE openFile(const std::string& fileName) const;
 };
 
 //-----------------------------------------------------------------------
 
-class FileNameDoesntStartWithSearchstringIgnoringCase
+class CompareName
 {
 public:
-    FileNameDoesntStartWithSearchstringIgnoringCase(const std::string& searchString)
-        :_searchString(searchString)
+    bool operator()(const Item& leftItem, const Item& rightItem) const;
+};
+
+//-----------------------------------------------------------------------
+
+class NeedsToBeRemoved
+{
+public:
+    typedef std::set<std::string> OrderedStringCollection;
+
+    NeedsToBeRemoved(const Options& options, const OrderedStringCollection& extensions, const std::string& searchString)
+        :_options(options), _extensions(extensions), _searchString(searchString)
     {}
 
-    bool operator()(const std::string& workingString) const
-    {
-        const size_t charCount = std::min(workingString.length(), _searchString.length());
-
-        return (_strnicmp(PathFindFileName(workingString.c_str()), _searchString.c_str(), charCount) != 0);
-    }
+    bool operator()(const Item& item) const;
 
 private:
-    std::string _searchString;
+    bool doesntContainSearchstringIgnoringCase(const std::string& path) const;
+
+    static bool isUNCPath(const std::string& path);
+    static bool isDirectory(const std::string& path);
+    static void tolower(std::string& toConvert);
+
+    const Options& _options;
+    const OrderedStringCollection& _extensions;
+    const std::string& _searchString;
 };
 
 //-----------------------------------------------------------------------

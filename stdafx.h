@@ -38,4 +38,4 @@
 #include <atlcomcli.h>
 #include <shobjidl.h>
 #include <shlguid.h>
-
+#include <shlobj.h>

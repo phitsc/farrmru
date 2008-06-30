@@ -1,68 +1,62 @@
 #pragma once
 
 #include "OptionsFile.h"
+#include "Options.h"
 
 #include <string>
 #include <vector>
 #include <map>
 #include <list>
+#include <set>
 
 class RegistryKey;
 
 //-----------------------------------------------------------------------
 
-struct Options
-{
-    Options(const OptionsFile& optionsFile);
-    void update(const OptionsFile& optionsFile);
-
-    bool ignoreNetworkFiles;
-    bool ignoreDirectories;
-};
-
-//-----------------------------------------------------------------------
-
 class FarrMostRecentlyUsedPlugin
 {
-    typedef std::vector<std::string> Items;
-
 public:
+
+    // groupName, itemPath
+    typedef std::pair<std::string, std::string> Item;
+    typedef std::vector<Item> Items;
+
     FarrMostRecentlyUsedPlugin(const std::string& modulePath, IShellLink* shellLinkRawPtr);
 
     void search(const std::string& rawSearchString, const std::string& searchString);
 
     Items::size_type getItemCount() const;
-    const std::string& getItem(const Items::size_type& index) const;
+    const Item& getItem(const Items::size_type& index) const;
 
     void showOptions();
 
 private:
-    typedef std::list<std::string> ItemList;
+    typedef std::list<Item> ItemList;
 
     // from file system
     void addRecentDocuments(ItemList& itemList);
 
     // from registry
-    void addMRUs(const std::string& keyPath, ItemList& itemList);
+    void addMRUs(const std::string& groupName, const std::string& keyPath, ItemList& itemList);
     
     bool hasMRUList(const RegistryKey& registryKey) const;
-    void addWithMRUList(const RegistryKey& registryKey, ItemList& itemList);
-    
-    void addWithItemNo(const RegistryKey& registryKey, ItemList& itemList);
+    void addWithMRUList(const std::string& groupName, const RegistryKey& registryKey, ItemList& itemList);
+    void addWithItemNo(const std::string& groupName, const RegistryKey& registryKey, ItemList& itemList);
 
     void resolveLink(std::string& path);
 
-    void sortItems(ItemList& itemList);
-    void resolveLinks(ItemList& itemList);
-    void filterItems(ItemList& itemList, const std::string& searchString);
+    typedef std::set<std::string> OrderedStringCollection;
 
-    typedef std::vector<std::string> OptionStrings;
-    static OptionStrings extractOptionStrings(const std::string& rawSearchString);
+    void sortItemsAlphabetically(ItemList& itemList);
+    void sortItemsLastModified(ItemList& itemList);
+    void resolveLinks(ItemList& itemList);
+    void filterItems(ItemList& itemList, const std::string& searchString, const OrderedStringCollection& extensions);
+
+    void extractOptionsAndExtensions(const std::string& rawSearchString, OrderedStringCollection& options, OrderedStringCollection& extensions) const;
+
+    OrderedStringCollection _farrOptions;
 
     static void removeInvalidStuff(std::string& path);
-
-    static bool isNetworkFile(const std::string& path);
-    static bool isDirectory(const std::string& path);
 
     Items _items;
 
@@ -70,10 +64,12 @@ private:
     Options     _options;
 
     typedef std::vector<std::string> RegistryPaths;
-    typedef std::map<std::string, RegistryPaths> TypeToRegistryPaths;
-    TypeToRegistryPaths _typeToRegistryPaths;
+    typedef std::pair<std::string, RegistryPaths> GroupNameAndRegistryPaths;
+    typedef std::map<std::string, GroupNameAndRegistryPaths> TypeToGroupNameAndRegistryPaths;
+    TypeToGroupNameAndRegistryPaths _typeToGroupNameAndRegistryPaths;
 
     CComPtr<IShellLink> _shellLink;
+    CComPtr<IPersistFile> _shellLinkFile;
 };
 
 //-----------------------------------------------------------------------

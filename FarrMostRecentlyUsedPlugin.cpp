@@ -12,23 +12,6 @@
 #include <fstream>
 #include <map>
 
-#include <shlobj.h>
-
-//-----------------------------------------------------------------------
-
-Options::Options(const OptionsFile& optionsFile)
-{
-    update(optionsFile);
-}
-
-//-----------------------------------------------------------------------
-
-void Options::update(const OptionsFile& optionsFile)
-{
-    ignoreNetworkFiles = optionsFile.getValue("IgnoreNetworkFiles", true);
-    ignoreDirectories = optionsFile.getValue("IgnoreDirectories", true);
-}
-
 //-----------------------------------------------------------------------
 
 FarrMostRecentlyUsedPlugin::FarrMostRecentlyUsedPlugin(const std::string& modulePath, IShellLink* shellLinkRawPtr) :
@@ -36,6 +19,13 @@ _optionsFile(modulePath + "\\FarrMostRecentlyUsed.ini"),
 _options(_optionsFile),
 _shellLink(shellLinkRawPtr)
 {
+    _shellLink.QueryInterface(&_shellLinkFile);
+
+    // ignore these, they are used by farr
+    _farrOptions.insert("sall");
+    _farrOptions.insert("alias");
+
+    // 
     const std::string configFileName = modulePath + "\\FarrMostRecentlyUsed.config";
     std::ifstream mruSpecificationsFile(configFileName.c_str());
     if(mruSpecificationsFile.is_open())
@@ -53,11 +43,32 @@ _shellLink(shellLinkRawPtr)
             {
                 if(line[0] == '+')
                 {
-                    currentType = line.substr(1);
+                    // remove +
+                    line.erase(0, 1);
+
+                    std::string groupName;
+
+                    // extract group name, if present
+                    std::string::size_type pos = line.find('|');
+                    if(pos != std::string::npos)
+                    {
+                        currentType = line.substr(0, pos);
+                        groupName = line.substr(pos + 1);
+                    }
+                    else
+                    {
+                        currentType = line;
+                    }
+
+                    // adds entry
+                    GroupNameAndRegistryPaths& groupNameAndRegistryPaths = _typeToGroupNameAndRegistryPaths[currentType];
+                    groupNameAndRegistryPaths.first = groupName;
                 }
                 else
                 {
-                    RegistryPaths& registryPaths = _typeToRegistryPaths[currentType];
+                    GroupNameAndRegistryPaths& groupNameAndRegistryPaths = _typeToGroupNameAndRegistryPaths[currentType];
+                    RegistryPaths& registryPaths = groupNameAndRegistryPaths.second;
+
                     registryPaths.push_back(line);
                 }
             }
@@ -71,30 +82,42 @@ void FarrMostRecentlyUsedPlugin::search(const std::string& rawSearchString, cons
 {
     ItemList itemList;
 
-    const OptionStrings optionStrings = extractOptionStrings(rawSearchString);
-    if(optionStrings.empty())
+    bool needsSorting = (_options.sortMode != 0);
+
+    OrderedStringCollection options;
+    OrderedStringCollection extensions;
+    extractOptionsAndExtensions(rawSearchString, options, extensions);
+    if(options.empty())
     {
         // use recent folder
         addRecentDocuments(itemList);
 
-        sortItems(itemList);
+        if(needsSorting && (_options.sortMode == Options::TimeLastModified))
+        {
+            sortItemsLastModified(itemList);
+
+            needsSorting = false;
+        }
+
         resolveLinks(itemList);
     }
     else
     {
         // use special type from registry
-        OptionStrings::const_iterator optionStringIterator = optionStrings.begin();
-        const OptionStrings::const_iterator optionStringsEnd = optionStrings.end();
+        OrderedStringCollection::const_iterator optionIterator = options.begin();
+        const OrderedStringCollection::const_iterator optionEnd = options.end();
 
-        for( ; optionStringIterator != optionStringsEnd; ++optionStringIterator)
+        for( ; optionIterator != optionEnd; ++optionIterator)
         {
-            const std::string& optionString = *optionStringIterator;
+            const std::string& option = *optionIterator;
 
-            // is the option a type
-            const TypeToRegistryPaths::const_iterator typeIterator = _typeToRegistryPaths.find(optionString);
-            if(typeIterator != _typeToRegistryPaths.end())
+            // is the option a known type
+            const TypeToGroupNameAndRegistryPaths::const_iterator typeIterator = _typeToGroupNameAndRegistryPaths.find(option);
+            if(typeIterator != _typeToGroupNameAndRegistryPaths.end())
             {
-                const RegistryPaths& registryPaths = typeIterator->second;
+                const GroupNameAndRegistryPaths& groupNameAndRegistryPaths = typeIterator->second;
+                const std::string& groupName = groupNameAndRegistryPaths.first;
+                const RegistryPaths& registryPaths = groupNameAndRegistryPaths.second;
 
                 RegistryPaths::const_iterator registryPathIterator = registryPaths.begin();
                 const RegistryPaths::const_iterator registryPathsEnd = registryPaths.end();
@@ -102,13 +125,23 @@ void FarrMostRecentlyUsedPlugin::search(const std::string& rawSearchString, cons
                 {
                     const std::string& registryPath = *registryPathIterator;
 
-                    addMRUs(registryPath, itemList);
+                    addMRUs(groupName, registryPath, itemList);
                 }
             }
         }
+
+        if(needsSorting && (_options.sortMode == Options::TimeLastModified))
+        {
+            needsSorting = false;
+        }
     }
 
-    filterItems(itemList, searchString);
+    filterItems(itemList, searchString, extensions);
+
+    if(needsSorting && (_options.sortMode == Options::Alphabetically))
+    {
+        sortItemsAlphabetically(itemList);
+    }
 
     _items.assign(itemList.begin(), itemList.end());
 }
@@ -128,14 +161,14 @@ void FarrMostRecentlyUsedPlugin::addRecentDocuments(ItemList& itemList)
         for( ; it != end; ++it)
         {
             const std::string& path = *it;
-            itemList.push_back(path);
+            itemList.push_back(Item("", path));
         }
     }
 }
 
 //-----------------------------------------------------------------------
 
-void FarrMostRecentlyUsedPlugin::addMRUs(const std::string& keyPath, ItemList& itemList)
+void FarrMostRecentlyUsedPlugin::addMRUs(const std::string& groupName, const std::string& keyPath, ItemList& itemList)
 {
     std::string::size_type backslashPos = keyPath.find('\\');
     if(backslashPos != std::string::npos)
@@ -162,17 +195,13 @@ void FarrMostRecentlyUsedPlugin::addMRUs(const std::string& keyPath, ItemList& i
             RegistryKey key;
             if(key.open(baseKey, restKey.c_str(), KEY_READ))
             {
-                std::stringstream stream;
-                stream << "adding: " << baseKeyName << "\\" << restKey << std::endl;
-                OutputDebugString(stream.str().c_str());
-
                 if(hasMRUList(key))
                 {
-                    addWithMRUList(key, itemList);
+                    addWithMRUList(groupName, key, itemList);
                 }
                 else
                 {
-                    addWithItemNo(key, itemList);
+                    addWithItemNo(groupName, key, itemList);
                 }
             }
         }
@@ -192,7 +221,7 @@ bool FarrMostRecentlyUsedPlugin::hasMRUList(const RegistryKey& registryKey) cons
 
 //-----------------------------------------------------------------------
 
-void FarrMostRecentlyUsedPlugin::addWithMRUList(const RegistryKey& registryKey, ItemList& itemList)
+void FarrMostRecentlyUsedPlugin::addWithMRUList(const std::string& groupName, const RegistryKey& registryKey, ItemList& itemList)
 {
     const DWORD MaxMRUListLength = 100;
     char mruList[MaxMRUListLength] = { 0 };
@@ -210,7 +239,7 @@ void FarrMostRecentlyUsedPlugin::addWithMRUList(const RegistryKey& registryKey, 
             DWORD length = MaxMRUValueLength;
             if(registryKey.queryValue(mruListItem, &type, (BYTE*)mruValue, &length))
             {
-                itemList.push_back(mruValue);
+                itemList.push_back(Item(groupName, mruValue));
             }
         }
     }
@@ -218,7 +247,7 @@ void FarrMostRecentlyUsedPlugin::addWithMRUList(const RegistryKey& registryKey, 
 
 //-----------------------------------------------------------------------
 
-void FarrMostRecentlyUsedPlugin::addWithItemNo(const RegistryKey& registryKey, ItemList& itemList)
+void FarrMostRecentlyUsedPlugin::addWithItemNo(const std::string& groupName, const RegistryKey& registryKey, ItemList& itemList)
 {
     const DWORD MaxValueNameLength = 100;
     char valueName[MaxValueNameLength] = { 0 };
@@ -258,7 +287,7 @@ void FarrMostRecentlyUsedPlugin::addWithItemNo(const RegistryKey& registryKey, I
     for( ; it != end; ++it)
     {
         const std::string& item = it->second;
-        itemList.push_back(item);
+        itemList.push_back(Item(groupName, item));
     }
 }
 
@@ -282,7 +311,7 @@ FarrMostRecentlyUsedPlugin::Items::size_type FarrMostRecentlyUsedPlugin::getItem
 
 //-----------------------------------------------------------------------
 
-const std::string& FarrMostRecentlyUsedPlugin::getItem(const Items::size_type& index) const
+const FarrMostRecentlyUsedPlugin::Item& FarrMostRecentlyUsedPlugin::getItem(const Items::size_type& index) const
 {
     return _items[index];
 }
@@ -300,10 +329,8 @@ void FarrMostRecentlyUsedPlugin::showOptions()
 
 //-----------------------------------------------------------------------
 
-FarrMostRecentlyUsedPlugin::OptionStrings FarrMostRecentlyUsedPlugin::extractOptionStrings(const std::string& rawSearchString)
+void FarrMostRecentlyUsedPlugin::extractOptionsAndExtensions(const std::string& rawSearchString, OrderedStringCollection& options, OrderedStringCollection& extensions) const
 {
-    OptionStrings optionStrings;
-
     std::string::size_type startPos = rawSearchString.find('+');
     while(startPos != std::string::npos)
     {
@@ -312,7 +339,17 @@ FarrMostRecentlyUsedPlugin::OptionStrings FarrMostRecentlyUsedPlugin::extractOpt
         std::string optionString = rawSearchString.substr(startPos + 1, (endPos != std::string::npos) ? endPos - startPos - 1 : std::string::npos);
         if(!optionString.empty())
         {
-            optionStrings.push_back(optionString);
+            if(optionString[0] == '.')
+            {
+                extensions.insert(optionString);
+            }
+            else
+            {
+                if(_farrOptions.find(optionString) == _farrOptions.end())
+                {
+                    options.insert(optionString);
+                }
+            }
         }
 
         if(endPos == std::string::npos)
@@ -324,17 +361,22 @@ FarrMostRecentlyUsedPlugin::OptionStrings FarrMostRecentlyUsedPlugin::extractOpt
             startPos = rawSearchString.find('+', endPos + 1);
         }
     }
-
-    return optionStrings;
 }
 
 //-----------------------------------------------------------------------
 
-void FarrMostRecentlyUsedPlugin::sortItems(ItemList& itemList)
+void FarrMostRecentlyUsedPlugin::sortItemsLastModified(ItemList& itemList)
 {
-    LastModified lastModified;
+    CompareLastModified compareLastModified;
+    itemList.sort(compareLastModified);
+}
 
-    itemList.sort(lastModified);
+//-----------------------------------------------------------------------
+
+void FarrMostRecentlyUsedPlugin::sortItemsAlphabetically(ItemList& itemList)
+{
+    CompareName compareName;
+    itemList.sort(compareName);
 }
 
 //-----------------------------------------------------------------------
@@ -346,7 +388,7 @@ void FarrMostRecentlyUsedPlugin::resolveLinks(ItemList& itemList)
 
     for( ; it != end; ++it)
     {
-        std::string& item = *it;
+        std::string& item = it->second;
 
         resolveLink(item);
     }
@@ -354,52 +396,19 @@ void FarrMostRecentlyUsedPlugin::resolveLinks(ItemList& itemList)
 
 //-----------------------------------------------------------------------
 
-bool FarrMostRecentlyUsedPlugin::isNetworkFile(const std::string& path)
+void FarrMostRecentlyUsedPlugin::filterItems(ItemList& itemList, const std::string& searchString, const OrderedStringCollection& extensions)
 {
-    bool isNetworkFile = (PathIsUNC(path.c_str()) == TRUE);
-    return isNetworkFile;
-}
-
-//-----------------------------------------------------------------------
-
-bool FarrMostRecentlyUsedPlugin::isDirectory(const std::string& path)
-{
-    bool isDirectory = ((GetFileAttributes(path.c_str()) & FILE_ATTRIBUTE_DIRECTORY) == FILE_ATTRIBUTE_DIRECTORY);
-    return isDirectory;
-}
-
-//-----------------------------------------------------------------------
-
-void FarrMostRecentlyUsedPlugin::filterItems(ItemList& itemList, const std::string& searchString)
-{
-    if(_options.ignoreNetworkFiles)
-    {
-        itemList.remove_if(isNetworkFile);
-    }
-
-    if(_options.ignoreDirectories)
-    {
-        itemList.remove_if(isDirectory);
-    }
-
-    if(!searchString.empty())
-    {
-        FileNameDoesntStartWithSearchstringIgnoringCase fileNamedoesntStartWithSearchstringIgnoringCase(searchString);
-        itemList.remove_if(fileNamedoesntStartWithSearchstringIgnoringCase);
-    }
+    NeedsToBeRemoved needsToBeRemoved(_options, extensions, searchString);
+    itemList.remove_if(needsToBeRemoved);
 }
 
 //-----------------------------------------------------------------------
 
 void FarrMostRecentlyUsedPlugin::resolveLink(std::string& path)
 {
-    const std::string extension = PathFindExtension(path.c_str());
-    if(extension == ".lnk")
+    if(strcmp(PathFindExtension(path.c_str()), ".lnk") == 0)
     {
-        CComPtr<IPersistFile> shellLinkFile;
-        _shellLink.QueryInterface(&shellLinkFile);
-
-        if(SUCCEEDED(shellLinkFile->Load(CComBSTR(path.c_str()), STGM_READ)))
+        if(SUCCEEDED(_shellLinkFile->Load(CComBSTR(path.c_str()), STGM_READ)))
         {
             char targetPath[MAX_PATH] = { 0 };
             if(SUCCEEDED(_shellLink->GetPath(targetPath, MAX_PATH, 0, SLGP_UNCPRIORITY)))
