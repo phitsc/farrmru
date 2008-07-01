@@ -51,12 +51,12 @@
 //
 #define ThisPlugin_DisplayName			"FARR Most Recently Used Plugin"
 #define ThisPlugin_VersionString		"0.1.0"
-#define ThisPlugin_ReleaseDateString	"June 30, 2008"
+#define ThisPlugin_ReleaseDateString	"July 1, 2008"
 #define ThisPlugin_Author			    "Philipp Tschannen (phitsc)"
 #define ThisPlugin_HomepageURL			"http://farrmru.origo.ethz.ch"
 #define ThisPlugin_UpdateURL			""
 #define ThisPlugin_ShortDescription		"Find most recently used files."
-#define ThisPlugin_LongDescription		"Find most recently used files."
+#define ThisPlugin_LongDescription		"Find files in Window's Recent Items/My Recent Documents folder or in the most recently used files lists of selected applications."
 //
 // If you support advanced options button, specify caption here, otherwise ""
 #define ThisPlugin_AdvConfigString		"Advanced Options"

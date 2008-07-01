@@ -61,9 +61,21 @@ bool NeedsToBeRemoved::operator()(const Item& item) const
         return true;
     }
 
-    if(!_searchString.empty() && doesntContainSearchstringIgnoringCase(item.second))
+    if((_sortMode != Options::Sort_NoSorting) && !_searchString.empty() && doesntContainSearchstringIgnoringCase(item.second))
     {
         return true;
+    }
+
+    // check for duplicates
+    std::string path = item.second;
+    tolower(path);
+    if(_items.find(path) != _items.end())
+    {
+        return true;
+    }
+    else
+    {
+        _items.insert(path);
     }
 
     return false;

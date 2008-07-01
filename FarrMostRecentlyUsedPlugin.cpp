@@ -17,7 +17,8 @@
 FarrMostRecentlyUsedPlugin::FarrMostRecentlyUsedPlugin(const std::string& modulePath, IShellLink* shellLinkRawPtr) :
 _optionsFile(modulePath + "\\FarrMostRecentlyUsed.ini"),
 _options(_optionsFile),
-_shellLink(shellLinkRawPtr)
+_shellLink(shellLinkRawPtr),
+_sortModeCurrentSearch(Options::Sort_NoSorting)
 {
     _shellLink.QueryInterface(&_shellLinkFile);
 
@@ -82,8 +83,6 @@ void FarrMostRecentlyUsedPlugin::search(const std::string& rawSearchString, cons
 {
     ItemList itemList;
 
-    bool needsSorting = (_options.sortMode != 0);
-
     OrderedStringCollection options;
     OrderedStringCollection extensions;
     extractOptionsAndExtensions(rawSearchString, options, extensions);
@@ -94,22 +93,24 @@ void FarrMostRecentlyUsedPlugin::search(const std::string& rawSearchString, cons
     const bool forceSortByDate = (options.find("bydate") != options.end());
     options.erase("bydate");
 
-    Options::SortMode sortMode = _options.sortMode;
+    _sortModeCurrentSearch = _options.sortMode;
     if(forceSortByName)
     {
-        sortMode = Options::Sort_Alphabetically;
+        _sortModeCurrentSearch = Options::Sort_Alphabetically;
     }
     else if(forceSortByDate)
     {
-        sortMode = Options::Sort_TimeLastModified;
+        _sortModeCurrentSearch = Options::Sort_TimeLastModified;
     }
+
+    bool needsSorting = (_sortModeCurrentSearch != 0);
 
     if(options.empty())
     {
         // use recent folder
         addRecentDocuments(itemList);
 
-        if(needsSorting && (sortMode == Options::Sort_TimeLastModified))
+        if(needsSorting && (_sortModeCurrentSearch == Options::Sort_TimeLastModified))
         {
             sortItemsLastModified(itemList);
 
@@ -147,7 +148,7 @@ void FarrMostRecentlyUsedPlugin::search(const std::string& rawSearchString, cons
             }
         }
 
-        if(needsSorting && (sortMode == Options::Sort_TimeLastModified))
+        if(needsSorting && (_sortModeCurrentSearch == Options::Sort_TimeLastModified))
         {
             needsSorting = false;
         }
@@ -155,7 +156,7 @@ void FarrMostRecentlyUsedPlugin::search(const std::string& rawSearchString, cons
 
     filterItems(itemList, searchString, extensions);
 
-    if(needsSorting && (sortMode == Options::Sort_Alphabetically))
+    if(needsSorting && (_sortModeCurrentSearch == Options::Sort_Alphabetically))
     {
         sortItemsAlphabetically(itemList);
     }
@@ -415,7 +416,7 @@ void FarrMostRecentlyUsedPlugin::resolveLinks(ItemList& itemList)
 
 void FarrMostRecentlyUsedPlugin::filterItems(ItemList& itemList, const std::string& searchString, const OrderedStringCollection& extensions)
 {
-    NeedsToBeRemoved needsToBeRemoved(_options, extensions, searchString);
+    NeedsToBeRemoved needsToBeRemoved(_options, _sortModeCurrentSearch, extensions, searchString);
     itemList.remove_if(needsToBeRemoved);
 }
 

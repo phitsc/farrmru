@@ -33,6 +33,11 @@ public:
         return _options.showGroupName;
     }
 
+    bool noSorting() const
+    {
+        return (_sortModeCurrentSearch == Options::Sort_NoSorting);
+    }
+
     void showOptions();
 
 private:
@@ -67,6 +72,8 @@ private:
 
     OptionsFile _optionsFile;
     Options     _options;
+    
+    Options::SortMode _sortModeCurrentSearch;
 
     typedef std::vector<std::string> RegistryPaths;
     typedef std::pair<std::string, RegistryPaths> GroupNameAndRegistryPaths;

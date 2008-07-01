@@ -39,8 +39,8 @@ class NeedsToBeRemoved
 public:
     typedef std::set<std::string> OrderedStringCollection;
 
-    NeedsToBeRemoved(const Options& options, const OrderedStringCollection& extensions, const std::string& searchString)
-        :_options(options), _extensions(extensions), _searchString(searchString)
+    NeedsToBeRemoved(const Options& options, Options::SortMode sortMode, const OrderedStringCollection& extensions, const std::string& searchString)
+        :_options(options), _sortMode(sortMode), _extensions(extensions), _searchString(searchString)
     {}
 
     bool operator()(const Item& item) const;
@@ -53,8 +53,12 @@ private:
     static void tolower(std::string& toConvert);
 
     const Options& _options;
+    const Options::SortMode _sortMode;
     const OrderedStringCollection& _extensions;
     const std::string& _searchString;
+
+    typedef std::set<std::string> Items;
+    mutable Items _items;
 };
 
 //-----------------------------------------------------------------------

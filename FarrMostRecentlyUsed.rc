@@ -50,7 +50,7 @@ BEGIN
             VALUE "OriginalFilename", "FarrMostRecentlyUsed.dll"
             VALUE "ProductName", "FARR plugin"
             VALUE "ProductVersion", "0.1.0"
-            VALUE "SpecialBuild", "20080630 - 0.1.0"
+            VALUE "SpecialBuild", "20080701 - 0.1.0"
         END
     END
     BLOCK "VarFileInfo"

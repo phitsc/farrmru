@@ -515,7 +515,7 @@ PREFUNCDEF BOOL EFuncName_Request_ItemResultByIndex(int resultindex, char *destb
     // return E_ResultPostProcessing_MatchAgainstSearch if the host should evaluate the result and decide whether to show it based on match of search words
     //
     // in this case we just return all bookmarks and let host do the matching
-    *resultpostprocmodep = E_ResultPostProcessing_ImmediateDisplay;
+    *resultpostprocmodep = (farrMostRecentlyUsedPlugin->noSorting() ? E_ResultPostProcessing_MatchAgainstSearch : E_ResultPostProcessing_ImmediateDisplay);
 
     // do we want to modify the score assigned by host?  usually not.
     // *scorep+=100;
