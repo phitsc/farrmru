@@ -70,6 +70,11 @@ bool NeedsToBeRemoved::operator()(const Item& item) const
         {
             return true;
         }
+
+        if(PathFileExists(item.path.c_str()) == FALSE)
+        {
+            return true;
+        }
     }
 
     if((_sortMode != Options::Sort_NoSorting) && !_searchString.empty() && doesntContainSearchstringIgnoringCase(item.path))
@@ -104,46 +109,7 @@ bool NeedsToBeRemoved::isUNCPath(const std::string& path)
 
 bool NeedsToBeRemoved::isDirectory(const Item& item) const
 {
-    //return (item.type == Item::Type_Folder);
-
-    if(_options.simpleDirectoryCheck && isUNCPath(item.path))
-    {
-        std::string::size_type pos = item.path.find_last_of(".\\/");
-        if(pos != std::string::npos)
-        {
-            bool temp = (item.path[pos] != '.');
-            if(temp)
-            {
-                OutputDebugString(item.path.c_str());
-            }
-
-            return temp;
-        }
-        else
-        {
-            OutputDebugString(item.path.c_str());
-
-            return true;
-        }
-    }
-    else
-    {
-        DWORD result = GetFileAttributes(item.path.c_str());
-
-        if(result == INVALID_FILE_ATTRIBUTES)
-        {
-            OutputDebugString("Error");
-        }
-
-        bool temp = ((result & FILE_ATTRIBUTE_DIRECTORY) == FILE_ATTRIBUTE_DIRECTORY);
-
-            if(temp)
-            {
-                OutputDebugString(item.path.c_str());
-            }
-
-            return temp;
-    }
+    return (item.type == Item::Type_Folder);
 }
 
 //-----------------------------------------------------------------------
