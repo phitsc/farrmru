@@ -1,6 +1,6 @@
 ===============================================================================
 
-FARR MostRecentlyUsed plugin - 0.1.0 - 1. July 2008
+FARR MostRecentlyUsed plugin - 0.2.0 - 2. July 2008
 
 (c) 2008 Philipp Tschannen
 
@@ -68,3 +68,25 @@ The icon is from FamFamFam's silk icon set: http://www.famfamfam.com/lab/icons/s
 Disclaimer
 ============
 This plugin is provided 'as is'. No warranty of any kind is expressed or implied. Use at your own risk.
+
+Version history
+================
+0.2.0
+- Added check for file existence for local files. UNC paths are currently never checked for existence.
+- Added MRU specifications for:
+  - Microsoft Office 2003 (+office3) *
+  - Photoshop Elements (+photoe) *
+  - KMPlayer (+km) *
+  - SnagIt (+snag) *
+  - SQL Server (+sql) *
+  - Paint (+paint)
+  - TED Notepad (+ted) *
+  - WinRAR (+winrar) *
+  - WinUAE (+winuae) *
+  - Wordpad (+wordpad) *
+- Renamed modifier for Microsoft Office 2007 to '+office7' 
+
+* Note that I did not test these myself, please report if they don't work.
+
+0.1.0
+- Initial release
