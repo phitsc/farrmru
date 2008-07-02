@@ -1,12 +1,13 @@
 #include "stdafx.h"
 #include "SortingAndFiltering.h"
+#include "Item.h"
 
 //-----------------------------------------------------------------------
 
 bool CompareLastModified::operator()(const Item& leftItem, const Item& rightItem) const
 {
-    HANDLE leftFile = openFile(leftItem.second);
-    HANDLE rightFile = openFile(rightItem.second);
+    HANDLE leftFile = openFile(leftItem.path);
+    HANDLE rightFile = openFile(rightItem.path);
     if((leftFile != 0) && (rightFile != 0))
     {
         FILETIME leftModified = { 0 };
@@ -38,36 +39,46 @@ HANDLE CompareLastModified::openFile(const std::string& fileName) const
 
 bool CompareName::operator ()(const Item& leftItem, const Item& rightItem) const
 {
-    return (_stricmp(PathFindFileName(leftItem.second.c_str()), PathFindFileName(rightItem.second.c_str())) < 0);
+    return (_stricmp(PathFindFileName(leftItem.path.c_str()), PathFindFileName(rightItem.path.c_str())) < 0);
 }
+
+//-----------------------------------------------------------------------
+
+NeedsToBeRemoved::NeedsToBeRemoved(const Options& options, Options::SortMode sortMode, const OrderedStringCollection& extensions, const std::string& searchString)
+:_options(options), _sortMode(sortMode), _extensions(extensions), _searchString(searchString)
+{}
 
 //-----------------------------------------------------------------------
 
 bool NeedsToBeRemoved::operator()(const Item& item) const
 {
-    if(!_options.includeUNCPaths && isUNCPath(item.second))
+    // pass through web stuff
+    if(item.type != Item::Type_URL)
     {
-        return true;
+        if(!_options.includeUNCPaths && isUNCPath(item.path))
+        {
+            return true;
+        }
+
+        std::string extension = PathFindExtension(item.path.c_str());
+        if(!_extensions.empty() && (_extensions.find(extension) == _extensions.end()))
+        {
+            return true;
+        }
+
+        if(_options.ignoreDirectories && isDirectory(item))
+        {
+            return true;
+        }
     }
 
-    std::string extension = PathFindExtension(item.second.c_str());
-    if(!_extensions.empty() && (_extensions.find(extension) == _extensions.end()))
-    {
-        return true;
-    }
-
-    if(_options.ignoreDirectories && isDirectory(item.second))
-    {
-        return true;
-    }
-
-    if((_sortMode != Options::Sort_NoSorting) && !_searchString.empty() && doesntContainSearchstringIgnoringCase(item.second))
+    if((_sortMode != Options::Sort_NoSorting) && !_searchString.empty() && doesntContainSearchstringIgnoringCase(item.path))
     {
         return true;
     }
 
     // check for duplicates
-    std::string path = item.second;
+    std::string path = item.path;
     tolower(path);
     if(_items.find(path) != _items.end())
     {
@@ -91,24 +102,47 @@ bool NeedsToBeRemoved::isUNCPath(const std::string& path)
 
 //-----------------------------------------------------------------------
 
-bool NeedsToBeRemoved::isDirectory(const std::string& path) const
+bool NeedsToBeRemoved::isDirectory(const Item& item) const
 {
-    if(_options.simpleDirectoryCheck && isUNCPath(path))
+    //return (item.type == Item::Type_Folder);
+
+    if(_options.simpleDirectoryCheck && isUNCPath(item.path))
     {
-        std::string::size_type pos = path.find_last_of(".\\/");
+        std::string::size_type pos = item.path.find_last_of(".\\/");
         if(pos != std::string::npos)
         {
-            return (path[pos] != '.');
+            bool temp = (item.path[pos] != '.');
+            if(temp)
+            {
+                OutputDebugString(item.path.c_str());
+            }
+
+            return temp;
         }
         else
         {
+            OutputDebugString(item.path.c_str());
+
             return true;
         }
     }
     else
     {
-        bool isDirectory = ((GetFileAttributes(path.c_str()) & FILE_ATTRIBUTE_DIRECTORY) == FILE_ATTRIBUTE_DIRECTORY);
-        return isDirectory;
+        DWORD result = GetFileAttributes(item.path.c_str());
+
+        if(result == INVALID_FILE_ATTRIBUTES)
+        {
+            OutputDebugString("Error");
+        }
+
+        bool temp = ((result & FILE_ATTRIBUTE_DIRECTORY) == FILE_ATTRIBUTE_DIRECTORY);
+
+            if(temp)
+            {
+                OutputDebugString(item.path.c_str());
+            }
+
+            return temp;
     }
 }
 

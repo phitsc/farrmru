@@ -14,7 +14,22 @@
 class FileList
 {
     public:
-        typedef std::list<std::string> Filenames;
+        struct File
+        {
+            enum Type
+            {
+                Type_File,
+                Type_Directory
+            };
+
+            File(const std::string path_, Type type_)
+                :path(path_), type(type_)
+            {}
+
+            std::string path;
+            Type type;
+        };
+        typedef std::list<File> Filenames;
         typedef Filenames::const_iterator const_iterator;
 
         enum
@@ -46,14 +61,16 @@ class FileList
             {
                 if(useFile(findData, typeFilter))
                 {
-                    _filenames.push_back(std::string(thePath) + std::string(findData.cFileName));
+                    bool isDirectory = ((findData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) == FILE_ATTRIBUTE_DIRECTORY);
+                    _filenames.push_back(File(std::string(thePath) + std::string(findData.cFileName), isDirectory ? File::Type_Directory : File::Type_File));
                 }
 
                 while(TRUE == FindNextFile(hFindFile, &findData))
                 {
                     if(useFile(findData, typeFilter))
                     {
-                        _filenames.push_back(std::string(thePath) + std::string(findData.cFileName));
+                        bool isDirectory = ((findData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) == FILE_ATTRIBUTE_DIRECTORY);
+                        _filenames.push_back(File(std::string(thePath) + std::string(findData.cFileName), isDirectory ? File::Type_Directory : File::Type_File));
                     }
                 }
 				FindClose(hFindFile);

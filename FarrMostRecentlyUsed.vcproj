@@ -265,6 +265,14 @@
 				>
 			</File>
 			<File
+				RelativePath=".\IsURL.h"
+				>
+			</File>
+			<File
+				RelativePath=".\Item.h"
+				>
+			</File>
+			<File
 				RelativePath=".\JrPlugin_GenericShell.h"
 				>
 			</File>

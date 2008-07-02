@@ -6,11 +6,16 @@
 #include "RegistryKey.h"
 #include "FileList.h"
 #include "SortingAndFiltering.h"
+#include "IsURL.h"
 
 #include <algorithm>
 #include <sstream>
 #include <fstream>
 #include <map>
+
+//-----------------------------------------------------------------------
+
+const IsURL isURL;
 
 //-----------------------------------------------------------------------
 
@@ -156,6 +161,8 @@ void FarrMostRecentlyUsedPlugin::search(const std::string& rawSearchString, cons
 
     filterItems(itemList, searchString, extensions);
 
+    //debugOutputResultList(itemList);
+
     if(needsSorting && (_sortModeCurrentSearch == Options::Sort_Alphabetically))
     {
         sortItemsAlphabetically(itemList);
@@ -178,8 +185,8 @@ void FarrMostRecentlyUsedPlugin::addRecentDocuments(ItemList& itemList)
 
         for( ; it != end; ++it)
         {
-            const std::string& path = *it;
-            itemList.push_back(Item("", path));
+            const FileList::File& file = *it;
+            itemList.push_back(Item("", file.path, (file.type == FileList::File::Type_Directory) ? Item::Type_Folder : Item::Type_File));
         }
     }
 }
@@ -253,11 +260,12 @@ void FarrMostRecentlyUsedPlugin::addWithMRUList(const std::string& groupName, co
             char mruListItem[2] = { mruList[index], 0 };
 
             const DWORD MaxMRUValueLength = MAX_PATH;
-            char mruValue[MaxMRUValueLength] = { 0 };
+            char mruValueBuffer[MaxMRUValueLength] = { 0 };
             DWORD length = MaxMRUValueLength;
-            if(registryKey.queryValue(mruListItem, &type, (BYTE*)mruValue, &length))
+            if(registryKey.queryValue(mruListItem, &type, (BYTE*)mruValueBuffer, &length))
             {
-                itemList.push_back(Item(groupName, mruValue));
+                std::string mruValue(mruValueBuffer);
+                itemList.push_back(Item(groupName, mruValue, isURL(mruValue) ? Item::Type_URL : Item::Type_File));
             }
         }
     }
@@ -305,7 +313,7 @@ void FarrMostRecentlyUsedPlugin::addWithItemNo(const std::string& groupName, con
     for( ; it != end; ++it)
     {
         const std::string& item = it->second;
-        itemList.push_back(Item(groupName, item));
+        itemList.push_back(Item(groupName, item, isURL(item) ? Item::Type_URL : Item::Type_File));
     }
 }
 
@@ -329,7 +337,7 @@ FarrMostRecentlyUsedPlugin::Items::size_type FarrMostRecentlyUsedPlugin::getItem
 
 //-----------------------------------------------------------------------
 
-const FarrMostRecentlyUsedPlugin::Item& FarrMostRecentlyUsedPlugin::getItem(const Items::size_type& index) const
+const Item& FarrMostRecentlyUsedPlugin::getItem(const Items::size_type& index) const
 {
     return _items[index];
 }
@@ -406,7 +414,7 @@ void FarrMostRecentlyUsedPlugin::resolveLinks(ItemList& itemList)
 
     for( ; it != end; ++it)
     {
-        std::string& item = it->second;
+        Item& item = *it;
 
         resolveLink(item);
     }
@@ -422,19 +430,42 @@ void FarrMostRecentlyUsedPlugin::filterItems(ItemList& itemList, const std::stri
 
 //-----------------------------------------------------------------------
 
-void FarrMostRecentlyUsedPlugin::resolveLink(std::string& path)
+void FarrMostRecentlyUsedPlugin::resolveLink(Item& item)
 {
-    if(strcmp(PathFindExtension(path.c_str()), ".lnk") == 0)
+    if(strcmp(PathFindExtension(item.path.c_str()), ".lnk") == 0)
     {
-        if(SUCCEEDED(_shellLinkFile->Load(CComBSTR(path.c_str()), STGM_READ)))
+        if(SUCCEEDED(_shellLinkFile->Load(CComBSTR(item.path.c_str()), STGM_READ)))
         {
             char targetPath[MAX_PATH] = { 0 };
-            if(SUCCEEDED(_shellLink->GetPath(targetPath, MAX_PATH, 0, SLGP_UNCPRIORITY)))
+            WIN32_FIND_DATA findData = { 0 };
+            if(SUCCEEDED(_shellLink->GetPath(targetPath, MAX_PATH, &findData, SLGP_UNCPRIORITY)))
             {
-                path = targetPath;
+                bool isDirectory = ((findData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) == FILE_ATTRIBUTE_DIRECTORY);
+
+                //if(isDirectory)
+                //{
+                //    OutputDebugString(targetPath);
+                //}
+
+                item.path = targetPath;
+                item.type = (isDirectory ? Item::Type_Folder : Item::Type_File);
             }
         }
     }
 }
 
 //-----------------------------------------------------------------------
+
+void FarrMostRecentlyUsedPlugin::debugOutputResultList(const ItemList& itemList)
+{
+    OutputDebugString("==== Result list ====");
+
+    ItemList::const_iterator it = itemList.begin();
+    const ItemList::const_iterator end = itemList.end();
+
+    for( ; it != end; ++it)
+    {
+        const std::string& itemPath = it->path;
+        OutputDebugString(itemPath.c_str());
+    }
+}

@@ -2,6 +2,7 @@
 
 #include "OptionsFile.h"
 #include "Options.h"
+#include "Item.h"
 
 #include <string>
 #include <vector>
@@ -16,9 +17,6 @@ class RegistryKey;
 class FarrMostRecentlyUsedPlugin
 {
 public:
-
-    // groupName, itemPath
-    typedef std::pair<std::string, std::string> Item;
     typedef std::vector<Item> Items;
 
     FarrMostRecentlyUsedPlugin(const std::string& modulePath, IShellLink* shellLinkRawPtr);
@@ -53,7 +51,7 @@ private:
     void addWithMRUList(const std::string& groupName, const RegistryKey& registryKey, ItemList& itemList);
     void addWithItemNo(const std::string& groupName, const RegistryKey& registryKey, ItemList& itemList);
 
-    void resolveLink(std::string& path);
+    void resolveLink(Item& item);
 
     typedef std::set<std::string> OrderedStringCollection;
 
@@ -63,6 +61,8 @@ private:
     void filterItems(ItemList& itemList, const std::string& searchString, const OrderedStringCollection& extensions);
 
     void extractOptionsAndExtensions(const std::string& rawSearchString, OrderedStringCollection& options, OrderedStringCollection& extensions) const;
+
+    static void debugOutputResultList(const ItemList& itemList);
 
     OrderedStringCollection _farrOptions;
 

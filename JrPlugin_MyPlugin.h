@@ -14,6 +14,7 @@
 //------------------------------------------------------------------------
 // system includes
 #include <windows.h>
+#include <string>
 //-----------------------------------------------------------------------
 
 
@@ -126,6 +127,7 @@ extern Fp_GlobalPluginCallback_NotifySearchStateChanged callbackfp_notifysearchs
 // Forward declarations
 void ExecuteCallback_SearchStateChanged();
 BOOL DoFarrSearchBegin(const char* searchstring_raw, const char *searchstring_lc_nokeywords);
+std::string getIconPathForUNCFile(const std::string& uncPath);
 //-----------------------------------------------------------------------
 
 

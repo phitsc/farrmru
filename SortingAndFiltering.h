@@ -11,7 +11,9 @@
 
 #include "Options.h"
 
-typedef std::pair<std::string, std::string> Item;
+//-----------------------------------------------------------------------
+
+struct Item;
 
 //-----------------------------------------------------------------------
 
@@ -39,9 +41,7 @@ class NeedsToBeRemoved
 public:
     typedef std::set<std::string> OrderedStringCollection;
 
-    NeedsToBeRemoved(const Options& options, Options::SortMode sortMode, const OrderedStringCollection& extensions, const std::string& searchString)
-        :_options(options), _sortMode(sortMode), _extensions(extensions), _searchString(searchString)
-    {}
+    NeedsToBeRemoved(const Options& options, Options::SortMode sortMode, const OrderedStringCollection& extensions, const std::string& searchString);
 
     bool operator()(const Item& item) const;
 
@@ -49,7 +49,7 @@ private:
     bool doesntContainSearchstringIgnoringCase(const std::string& path) const;
 
     static bool isUNCPath(const std::string& path);
-    bool isDirectory(const std::string& path) const;
+    bool isDirectory(const Item& item) const;
     static void tolower(std::string& toConvert);
 
     const Options& _options;

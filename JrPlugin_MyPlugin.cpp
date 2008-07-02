@@ -18,6 +18,7 @@
 
 
 #include "FarrMostRecentlyUsedPlugin.h"
+#include "RegistryKey.h"
 
 
 
@@ -520,23 +521,50 @@ PREFUNCDEF BOOL EFuncName_Request_ItemResultByIndex(int resultindex, char *destb
     // do we want to modify the score assigned by host?  usually not.
     // *scorep+=100;
 
-    // type (file is same as url)
-    *entrytypep = E_EntryType_FILE;
-
     // ok fill the result data
 
-    const FarrMostRecentlyUsedPlugin::Item& item = farrMostRecentlyUsedPlugin->getItem(resultindex);
+    const Item& item = farrMostRecentlyUsedPlugin->getItem(resultindex);
+
+    // type (file is same as url)
+    switch(item.type)
+    {
+    case Item::Type_File:
+        *entrytypep = E_EntryType_FILE;
+        break;
+
+    case Item::Type_Folder:
+        *entrytypep = E_EntryType_FOLDER;
+        break;
+
+    case Item::Type_URL:
+        *entrytypep = E_EntryType_URL;
+        break;
+
+    default:
+        *entrytypep = E_EntryType_UNKNOWN;
+        break;
+    }
+    
 
     const bool showGroupName = farrMostRecentlyUsedPlugin->showGroupName();
-    strncpy(destbuf_groupname, showGroupName ? item.first.c_str() : "", maxlen);
+    strncpy(destbuf_groupname, showGroupName ? item.groupName.c_str() : "", maxlen);
 
-    strncpy(destbuf_path, item.second.c_str(), maxlen);
+    strncpy(destbuf_path, item.path.c_str(), maxlen);
 
-    strncpy(destbuf_caption, PathFindFileName(item.second.c_str()), maxlen);
+    strncpy(destbuf_caption, PathFindFileName(item.path.c_str()), maxlen);
 
-    // IF you want to return an icon for this item do so here by returning icon filename
-    // by default we return the icon we use for the plugin
-    strncpy(destbuf_iconfilename, item.second.c_str(), maxlen);
+    if(PathIsUNC(item.path.c_str()))
+    {
+        strncpy(destbuf_iconfilename, getIconPathForUNCFile(item.path).c_str(), maxlen);
+    }
+    else if(item.type == Item::Type_URL)
+    {
+        strncpy(destbuf_iconfilename, getIconPathForUNCFile("a.html").c_str(), maxlen);
+    }
+    else
+    {
+        strncpy(destbuf_iconfilename, item.path.c_str(), maxlen);
+    }
 
     // ok filled one
     return TRUE;
@@ -673,3 +701,49 @@ BOOL DoFarrSearchBegin(const char* searchstring_raw, const char* searchstring_lc
   // search can continue by others
   return FALSE;
 }
+
+//-----------------------------------------------------------------------
+
+std::string getIconPathForUNCFile(const std::string& uncPath)
+{
+    std::string pathToIcon;
+
+    RegistryKey extensionKey;
+    if(extensionKey.open(HKEY_CLASSES_ROOT, PathFindExtension(uncPath.c_str()), KEY_READ))
+    {
+        const DWORD MaxApplicationNameLength = 100;
+        char applicationName[MaxApplicationNameLength] = { 0 };
+        DWORD type;
+        DWORD length = MaxApplicationNameLength;
+        if(extensionKey.queryValue(0, &type, (BYTE*)applicationName, &length))
+        {
+            RegistryKey applicationKey;
+            if(applicationKey.open(HKEY_CLASSES_ROOT, applicationName, KEY_READ))
+            {
+                RegistryKey defaultIconKey;
+                if(defaultIconKey.open(applicationKey, "DefaultIcon", KEY_READ))
+                {
+                    char pathToIconBuffer[MAX_PATH];
+                    DWORD type;
+                    DWORD length = MAX_PATH;
+                    if(defaultIconKey.queryValue(0, &type, (BYTE*)pathToIconBuffer, &length))
+                    {
+                        pathToIcon = pathToIconBuffer;
+                        std::string::size_type commaPos = pathToIcon.rfind(',');
+                        if(commaPos != std::string::npos)
+                        {
+                            pathToIcon.erase(commaPos);
+
+                            OutputDebugString(pathToIcon.c_str());
+                        }
+                    }
+                }
+            }
+
+        }
+    }
+
+    return pathToIcon;
+}
+
+//-----------------------------------------------------------------------
