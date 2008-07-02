@@ -6,16 +6,11 @@
 #include "RegistryKey.h"
 #include "FileList.h"
 #include "SortingAndFiltering.h"
-#include "IsURL.h"
 
 #include <algorithm>
 #include <sstream>
 #include <fstream>
 #include <map>
-
-//-----------------------------------------------------------------------
-
-const IsURL isURL;
 
 //-----------------------------------------------------------------------
 
@@ -265,7 +260,7 @@ void FarrMostRecentlyUsedPlugin::addWithMRUList(const std::string& groupName, co
             if(registryKey.queryValue(mruListItem, &type, (BYTE*)mruValueBuffer, &length))
             {
                 std::string mruValue(mruValueBuffer);
-                itemList.push_back(Item(groupName, mruValue, isURL(mruValue) ? Item::Type_URL : Item::Type_File));
+                itemList.push_back(Item(groupName, mruValue, PathIsURL(mruValue.c_str()) ? Item::Type_URL : Item::Type_File));
             }
         }
     }
@@ -313,7 +308,7 @@ void FarrMostRecentlyUsedPlugin::addWithItemNo(const std::string& groupName, con
     for( ; it != end; ++it)
     {
         const std::string& item = it->second;
-        itemList.push_back(Item(groupName, item, isURL(item) ? Item::Type_URL : Item::Type_File));
+        itemList.push_back(Item(groupName, item, PathIsURL(item.c_str()) ? Item::Type_URL : Item::Type_File));
     }
 }
 

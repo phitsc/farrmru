@@ -66,12 +66,12 @@ bool NeedsToBeRemoved::operator()(const Item& item) const
             return true;
         }
 
-        if(_options.ignoreDirectories && isDirectory(item))
+        if(!fileExists(item))
         {
             return true;
         }
 
-        if(PathFileExists(item.path.c_str()) == FALSE)
+        if(_options.ignoreDirectories && isDirectory(item))
         {
             return true;
         }
@@ -107,9 +107,56 @@ bool NeedsToBeRemoved::isUNCPath(const std::string& path)
 
 //-----------------------------------------------------------------------
 
+bool NeedsToBeRemoved::fileExists(const Item& item) const
+{
+    if(!isUNCPath(item.path))
+    {
+        return (PathFileExists(item.path.c_str()) == TRUE);
+    }
+    else
+    {
+        return true;
+    }
+}
+
+//-----------------------------------------------------------------------
+
 bool NeedsToBeRemoved::isDirectory(const Item& item) const
 {
-    return (item.type == Item::Type_Folder);
+    //return (item.type == Item::Type_Folder);
+
+    if(_options.simpleDirectoryCheck && isUNCPath(item.path))
+    {
+        std::string::size_type pos = item.path.find_last_of(".\\/");
+        if(pos != std::string::npos)
+        {
+            bool temp = (item.path[pos] != '.');
+            if(temp)
+            {
+                //OutputDebugString(item.path.c_str());
+            }
+
+            return temp;
+        }
+        else
+        {
+            //OutputDebugString(item.path.c_str());
+
+            return true;
+        }
+    }
+    else
+    {
+        DWORD result = GetFileAttributes(item.path.c_str());
+        if(result != INVALID_FILE_ATTRIBUTES)
+        {
+            return ((result & FILE_ATTRIBUTE_DIRECTORY) == FILE_ATTRIBUTE_DIRECTORY);
+        }
+        else
+        {
+            return false;
+        }
+    }
 }
 
 //-----------------------------------------------------------------------

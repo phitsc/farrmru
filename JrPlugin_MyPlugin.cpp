@@ -553,18 +553,18 @@ PREFUNCDEF BOOL EFuncName_Request_ItemResultByIndex(int resultindex, char *destb
 
     strncpy(destbuf_caption, PathFindFileName(item.path.c_str()), maxlen);
 
-    if(PathIsUNC(item.path.c_str()))
-    {
-        strncpy(destbuf_iconfilename, getIconPathForUNCFile(item.path).c_str(), maxlen);
-    }
-    else if(item.type == Item::Type_URL)
-    {
-        strncpy(destbuf_iconfilename, getIconPathForUNCFile("a.html").c_str(), maxlen);
-    }
-    else
-    {
+    //if(PathIsUNC(item.path.c_str()))
+    //{
+    //    strncpy(destbuf_iconfilename, getIconPathForUNCFile(item.path).c_str(), maxlen);
+    //}
+    //else if(item.type == Item::Type_URL)
+    //{
+    //    strncpy(destbuf_iconfilename, getIconPathForUNCFile("a.html").c_str(), maxlen);
+    //}
+    //else
+    //{
         strncpy(destbuf_iconfilename, item.path.c_str(), maxlen);
-    }
+    //}
 
     // ok filled one
     return TRUE;

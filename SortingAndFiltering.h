@@ -49,6 +49,7 @@ private:
     bool doesntContainSearchstringIgnoringCase(const std::string& path) const;
 
     static bool isUNCPath(const std::string& path);
+    bool fileExists(const Item& item) const;
     bool isDirectory(const Item& item) const;
     static void tolower(std::string& toConvert);
 
