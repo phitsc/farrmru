@@ -171,7 +171,7 @@ bool NeedsToBeRemoved::doesntContainSearchstringIgnoringCase(const std::string& 
 
 //-----------------------------------------------------------------------
 
-void NeedsToBeRemoved::tolower(std::string& toConvert)
+void tolower(std::string& toConvert)
 {
     std::locale loc;
     std::use_facet<std::ctype<char> >(loc).tolower(&toConvert[0], &toConvert[toConvert.length()]);

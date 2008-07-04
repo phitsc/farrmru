@@ -21,7 +21,7 @@ public:
 
     FarrMostRecentlyUsedPlugin(const std::string& modulePath, IShellLink* shellLinkRawPtr);
 
-    void search(const std::string& rawSearchString, const std::string& searchString);
+    void search(const char* rawSearchString);
 
     Items::size_type getItemCount() const;
     const Item& getItem(const Items::size_type& index) const;
@@ -40,31 +40,40 @@ public:
 
 private:
     typedef std::list<Item> ItemList;
-
-    // from file system
-    void addRecentDocuments(ItemList& itemList);
+    typedef std::set<std::string> OrderedStringCollection;
+    typedef std::vector<std::string> RegistryPaths;
+    typedef std::pair<std::string, RegistryPaths> GroupNameAndRegistryPaths;
+    typedef std::map<std::string, GroupNameAndRegistryPaths> TypeToGroupNameAndRegistryPaths;
 
     // from registry
     void addMRUs(const std::string& groupName, const std::string& keyPath, ItemList& itemList);
     
+    //
+    void addMenuItems(ItemList& itemList);
+    void addMyRecentDocuments(ItemList& itemList, bool& needsSorting);
+    void addMruApplications(ItemList& itemList, const OrderedStringCollection& types);
+
     bool hasMRUList(const RegistryKey& registryKey) const;
     void addWithMRUList(const std::string& groupName, const RegistryKey& registryKey, ItemList& itemList);
     void addWithItemNo(const std::string& groupName, const RegistryKey& registryKey, ItemList& itemList);
+    void addType(const TypeToGroupNameAndRegistryPaths::const_iterator& typeIterator, ItemList& itemList);
 
     void resolveLink(Item& item);
-
-    typedef std::set<std::string> OrderedStringCollection;
 
     void sortItemsAlphabetically(ItemList& itemList);
     void sortItemsLastModified(ItemList& itemList);
     void resolveLinks(ItemList& itemList);
     void filterItems(ItemList& itemList, const std::string& searchString, const OrderedStringCollection& extensions);
 
-    void extractOptionsAndExtensions(const std::string& rawSearchString, OrderedStringCollection& options, OrderedStringCollection& extensions) const;
+    void extractSearchOptions(std::string& searchString, 
+                              OrderedStringCollection& options,
+                              OrderedStringCollection& types,
+                              OrderedStringCollection& extensions) const;
 
     static void debugOutputResultList(const ItemList& itemList);
 
     OrderedStringCollection _farrOptions;
+    OrderedStringCollection _mruOptions;
 
     static void removeInvalidStuff(std::string& path);
 
@@ -75,9 +84,6 @@ private:
     
     Options::SortMode _sortModeCurrentSearch;
 
-    typedef std::vector<std::string> RegistryPaths;
-    typedef std::pair<std::string, RegistryPaths> GroupNameAndRegistryPaths;
-    typedef std::map<std::string, GroupNameAndRegistryPaths> TypeToGroupNameAndRegistryPaths;
     TypeToGroupNameAndRegistryPaths _typeToGroupNameAndRegistryPaths;
 
     CComPtr<IShellLink> _shellLink;

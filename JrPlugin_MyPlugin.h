@@ -96,7 +96,7 @@
 //-----------------------------------------------------------------------
 // FARR specific stuff
 #define ThisPlugin_FARR_DefaultAlias		"mru"
-#define ThisPlugin_FARR_DefaultRegex		""
+#define ThisPlugin_FARR_DefaultRegex		"mru."
 #define ThisPlugin_FARR_DefaultRegexFilter	""
 #define ThisPlugin_FARR_DefaultKeywordStr	""
 #define ThisPlugin_FARR_DefaultScoreStr		""

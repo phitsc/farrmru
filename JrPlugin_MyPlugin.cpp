@@ -316,8 +316,10 @@ BOOL MyPlugin_SetState(int /*newstateval*/)
 //
 PREFUNCDEF BOOL EFuncName_Inform_SearchBegins(const char* searchstring_raw, const char* searchstring_lc_nokeywords, BOOL explicitinvocation)
 {
-   if (!explicitinvocation)
-    return FALSE;
+    if (!explicitinvocation)
+        return FALSE;
+
+    OutputDebugString("EFuncName_Inform_SearchBegins");
 
     return DoFarrSearchBegin(searchstring_raw, searchstring_lc_nokeywords);
 }
@@ -340,8 +342,10 @@ PREFUNCDEF BOOL EFuncName_Inform_SearchBegins(const char* searchstring_raw, cons
 //
 PREFUNCDEF BOOL EFuncName_Inform_RegexSearchMatch(const char* searchstring_raw, const char* searchstring_lc_nokeywords, int /*regexgroups*/, char** /*regexcharps*/)
 {
-  // call farr search - nothing to do really for this plugin but return all results
-  return DoFarrSearchBegin(searchstring_raw, searchstring_lc_nokeywords);
+    OutputDebugString("EFuncName_Inform_RegexSearchMatch");
+
+    // call farr search - nothing to do really for this plugin but return all results
+    return DoFarrSearchBegin(searchstring_raw, searchstring_lc_nokeywords);
 }
 //-----------------------------------------------------------------------
 
@@ -540,31 +544,46 @@ PREFUNCDEF BOOL EFuncName_Request_ItemResultByIndex(int resultindex, char *destb
         *entrytypep = E_EntryType_URL;
         break;
 
+    case Item::Type_Alias:
+        *entrytypep = E_EntryType_ALIAS;
+        break;
+
     default:
         *entrytypep = E_EntryType_UNKNOWN;
         break;
     }
-    
 
-    const bool showGroupName = farrMostRecentlyUsedPlugin->showGroupName();
-    strncpy(destbuf_groupname, showGroupName ? item.groupName.c_str() : "", maxlen);
+    if(item.type == E_EntryType_ALIAS)
+    {
+        strncpy(destbuf_groupname, item.groupName.c_str(), maxlen);
 
-    strncpy(destbuf_path, item.path.c_str(), maxlen);
+        const std::string& pathName = item.path;
+        const std::string::size_type pipePos = pathName.find('|');
 
-    strncpy(destbuf_caption, PathFindFileName(item.path.c_str()), maxlen);
+        strncpy(destbuf_caption, pathName.substr(0, pipePos).c_str(), maxlen);
+        strncpy(destbuf_path, pathName.substr(pipePos + 1).c_str(), maxlen);
+    }
+    else
+    {
+        const bool showGroupName = farrMostRecentlyUsedPlugin->showGroupName();
 
-    //if(PathIsUNC(item.path.c_str()))
-    //{
-    //    strncpy(destbuf_iconfilename, getIconPathForUNCFile(item.path).c_str(), maxlen);
-    //}
-    //else if(item.type == Item::Type_URL)
-    //{
-    //    strncpy(destbuf_iconfilename, getIconPathForUNCFile("a.html").c_str(), maxlen);
-    //}
-    //else
-    //{
+        strncpy(destbuf_groupname, showGroupName ? item.groupName.c_str() : "", maxlen);
+        strncpy(destbuf_caption, PathFindFileName(item.path.c_str()), maxlen);
+        strncpy(destbuf_path, item.path.c_str(), maxlen);
+
+        //if(PathIsUNC(item.path.c_str()))
+        //{
+        //    strncpy(destbuf_iconfilename, getIconPathForUNCFile(item.path).c_str(), maxlen);
+        //}
+        //else if(item.type == Item::Type_URL)
+        //{
+        //    strncpy(destbuf_iconfilename, getIconPathForUNCFile("a.html").c_str(), maxlen);
+        //}
+        //else
+        //{
         strncpy(destbuf_iconfilename, item.path.c_str(), maxlen);
-    //}
+        //}
+    }
 
     // ok filled one
     return TRUE;
@@ -670,36 +689,39 @@ void ExecuteCallback_SearchStateChanged()
 
 //-----------------------------------------------------------------------
 
-BOOL DoFarrSearchBegin(const char* searchstring_raw, const char* searchstring_lc_nokeywords)
+BOOL DoFarrSearchBegin(const char* searchstring_raw, const char* /*searchstring_lc_nokeywords*/)
 {
-  // FARR search -- all we really do is return all bookmarks in our store, and let the farr program filter them based on what user types
-  if (!isready)
-  {
-    // statusbar
-    std::string busymsg = std::string(ThisPlugin_DisplayName) + std::string(" ") + std::string(_T("is busy.."));
-    callbackfp_set_strval(hostptr, "statusbar", (TCHAR*)busymsg.c_str());
-    // search can continue by others?
+    // FARR search -- all we really do is return all bookmarks in our store, and let the farr program filter them based on what user types
+    if (!isready)
+    {
+        // statusbar
+        std::string busymsg = std::string(ThisPlugin_DisplayName) + std::string(" ") + std::string(_T("is busy.."));
+        callbackfp_set_strval(hostptr, "statusbar", (TCHAR*)busymsg.c_str());
+        // search can continue by others?
+        return FALSE;
+    }
+
+    // start and end of search state
+    current_searchstate = E_SearchState_Searching;
+
+    ExecuteCallback_SearchStateChanged();
+
+    //
+    farrMostRecentlyUsedPlugin->search(searchstring_raw);
+
+    // ok now results are available right away
+    // IMPORTANT: here is where you modify the code to specify how many results are available
+    numresultsavailable = (int)farrMostRecentlyUsedPlugin->getItemCount();
+    resultsavailabletype = E_ResultAvailableState_ItemResuls;
+
+    // done
+    current_searchstate = E_SearchState_Stopped;
+
+    // notify host that our state has changed
+    ExecuteCallback_SearchStateChanged();
+
+    // search can continue by others
     return FALSE;
-  }
-
-  // start and end of search state
-  current_searchstate = E_SearchState_Searching;
-  
-  farrMostRecentlyUsedPlugin->search(searchstring_raw, searchstring_lc_nokeywords);
-
-  // ok now results are available right away
-  // IMPORTANT: here is where you modify the code to specify how many results are available
-  numresultsavailable = (int)farrMostRecentlyUsedPlugin->getItemCount();
-  resultsavailabletype = E_ResultAvailableState_ItemResuls;
-
-  // done
-  current_searchstate = E_SearchState_Stopped;
-
-  // notify host that our state has changed
-  ExecuteCallback_SearchStateChanged();
-
-  // search can continue by others
-  return FALSE;
 }
 
 //-----------------------------------------------------------------------

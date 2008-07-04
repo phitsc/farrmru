@@ -26,6 +26,9 @@ _sortModeCurrentSearch(Options::Sort_NoSorting)
     _farrOptions.insert("sall");
     _farrOptions.insert("alias");
 
+    _mruOptions.insert("byname");
+    _mruOptions.insert("bydate");
+
     // 
     const std::string configFileName = modulePath + "\\FarrMostRecentlyUsed.config";
     std::ifstream mruSpecificationsFile(configFileName.c_str());
@@ -79,96 +82,140 @@ _sortModeCurrentSearch(Options::Sort_NoSorting)
 
 //-----------------------------------------------------------------------
 
-void FarrMostRecentlyUsedPlugin::search(const std::string& rawSearchString, const std::string& searchString)
+enum MruMode
 {
-    ItemList itemList;
+    Mode_MyRecentDocuments,
+    Mode_Programs,
+    Mode_All,
+    Mode_User,
+    Mode_Menu,
+    Mode_None,
+};
+const char* MruAliases[] = {
+    "mrum",
+    "mrup",
+    "mrua",
+    "mruu",
+    "mru"
+};
+const unsigned long MruAliasesCount = sizeof(MruAliases) / sizeof(MruAliases[0]);
 
-    OrderedStringCollection options;
-    OrderedStringCollection extensions;
-    extractOptionsAndExtensions(rawSearchString, options, extensions);
+const std::string MyRecentDocumentsAlias = "mrum";
+const std::string ProgramsAlias = "mrup";
+const std::string AllAlias = "mrua";
+const std::string UserAlias = "mruu";
+const std::string MenuAlias = "mru";
 
-    const bool forceSortByName = (options.find("byname") != options.end());
-    options.erase("byname");
+void FarrMostRecentlyUsedPlugin::search(const char* rawSearchString)
+{
+    MruMode mruMode = Mode_None;
 
-    const bool forceSortByDate = (options.find("bydate") != options.end());
-    options.erase("bydate");
+    std::string searchString(rawSearchString);
+    tolower(searchString);
 
-    _sortModeCurrentSearch = _options.sortMode;
-    if(forceSortByName)
+    for(unsigned long aliasIndex = 0; aliasIndex < MruAliasesCount; ++aliasIndex)
     {
-        _sortModeCurrentSearch = Options::Sort_Alphabetically;
-    }
-    else if(forceSortByDate)
-    {
-        _sortModeCurrentSearch = Options::Sort_TimeLastModified;
-    }
-
-    bool needsSorting = (_sortModeCurrentSearch != 0);
-
-    if(options.empty())
-    {
-        // use recent folder
-        addRecentDocuments(itemList);
-
-        if(needsSorting && (_sortModeCurrentSearch == Options::Sort_TimeLastModified))
+        std::string alias(MruAliases[aliasIndex]);
+        if(_strnicmp(searchString.c_str(), alias.c_str(), alias.length()) == 0)
         {
-            sortItemsLastModified(itemList);
+            mruMode = (MruMode)aliasIndex;
+            searchString.erase(0, alias.length() + 1 /* also remove the space, if there is one */);
+            break;
+        }
+    }
 
-            needsSorting = false;
+    if(mruMode != Mode_None)
+    {
+        ItemList itemList;
+
+        OrderedStringCollection options;
+        OrderedStringCollection types;
+        OrderedStringCollection extensions;
+        extractSearchOptions(searchString, options, types, extensions);
+
+        OutputDebugString(searchString.c_str());
+
+        const bool forceSortByName = (options.find("byname") != options.end());
+        options.erase("byname");
+
+        const bool forceSortByDate = (options.find("bydate") != options.end());
+        options.erase("bydate");
+
+        _sortModeCurrentSearch = _options.sortMode;
+        if(forceSortByName)
+        {
+            _sortModeCurrentSearch = Options::Sort_Alphabetically;
+        }
+        else if(forceSortByDate)
+        {
+            _sortModeCurrentSearch = Options::Sort_TimeLastModified;
         }
 
-        resolveLinks(itemList);
-    }
-    else
-    {
-        // use special type from registry
-        OrderedStringCollection::const_iterator optionIterator = options.begin();
-        const OrderedStringCollection::const_iterator optionEnd = options.end();
+        bool needsSorting = (_sortModeCurrentSearch != 0);
+        bool needsFiltering = true;
 
-        for( ; optionIterator != optionEnd; ++optionIterator)
+        switch(mruMode)
         {
-            const std::string& option = *optionIterator;
+        case Mode_None:
+            break;
 
-            // is the option a known type
-            const TypeToGroupNameAndRegistryPaths::const_iterator typeIterator = _typeToGroupNameAndRegistryPaths.find(option);
-            if(typeIterator != _typeToGroupNameAndRegistryPaths.end())
+        case Mode_MyRecentDocuments:
+            addMyRecentDocuments(itemList, needsSorting);
+            break;
+
+        case Mode_Programs:
+            addMruApplications(itemList, types);
+            break;
+
+        case Mode_All:
+            break;
+
+        case Mode_User:
+            break;
+
+        case Mode_Menu:
+            addMenuItems(itemList);
+            needsFiltering = false;
+            needsSorting = false;
+            break;
+        }
+
+        if(needsFiltering)
+        {
+            //filterItems(itemList, searchString, extensions);
+        }
+
+        if(needsSorting)
+        {
+            switch(_sortModeCurrentSearch)
             {
-                const GroupNameAndRegistryPaths& groupNameAndRegistryPaths = typeIterator->second;
-                const std::string& groupName = groupNameAndRegistryPaths.first;
-                const RegistryPaths& registryPaths = groupNameAndRegistryPaths.second;
+            case Options::Sort_Alphabetically:
+                sortItemsAlphabetically(itemList);
+                break;
 
-                RegistryPaths::const_iterator registryPathIterator = registryPaths.begin();
-                const RegistryPaths::const_iterator registryPathsEnd = registryPaths.end();
-                for( ; registryPathIterator != registryPathsEnd; ++registryPathIterator)
-                {
-                    const std::string& registryPath = *registryPathIterator;
-
-                    addMRUs(groupName, registryPath, itemList);
-                }
+            case Options::Sort_TimeLastModified:
+                sortItemsLastModified(itemList);
+                break;
             }
         }
 
-        if(needsSorting && (_sortModeCurrentSearch == Options::Sort_TimeLastModified))
-        {
-            needsSorting = false;
-        }
+        _items.assign(itemList.begin(), itemList.end());
     }
-
-    filterItems(itemList, searchString, extensions);
-
-    //debugOutputResultList(itemList);
-
-    if(needsSorting && (_sortModeCurrentSearch == Options::Sort_Alphabetically))
-    {
-        sortItemsAlphabetically(itemList);
-    }
-
-    _items.assign(itemList.begin(), itemList.end());
 }
 
 //-----------------------------------------------------------------------
 
-void FarrMostRecentlyUsedPlugin::addRecentDocuments(ItemList& itemList)
+void FarrMostRecentlyUsedPlugin::addMenuItems(ItemList& itemList)
+{
+    itemList.push_back(Item("Alias mrum", "List only 'My Recent Document'|restartsearch mrum", Item::Type_Alias));
+    itemList.push_back(Item("Alias mrup", "List most recently used items of configured programs|restartsearch mrup", Item::Type_Alias));
+    itemList.push_back(Item("Alias mrua", "List all most recently used items|restartsearch mrua", Item::Type_Alias));
+    itemList.push_back(Item("Alias mruu", "List user defined most recently used items|restartsearch mruu", Item::Type_Alias));
+}
+
+//-----------------------------------------------------------------------
+
+void FarrMostRecentlyUsedPlugin::addMyRecentDocuments(ItemList& itemList, bool& needsSorting)
 {
     char recentFolder[MAX_PATH] = { 0 };
     if(S_OK == SHGetFolderPath(0, CSIDL_RECENT, 0, SHGFP_TYPE_CURRENT, recentFolder))
@@ -183,6 +230,68 @@ void FarrMostRecentlyUsedPlugin::addRecentDocuments(ItemList& itemList)
             const FileList::File& file = *it;
             itemList.push_back(Item("", file.path, (file.type == FileList::File::Type_Directory) ? Item::Type_Folder : Item::Type_File));
         }
+    }
+
+    if(needsSorting && (_sortModeCurrentSearch == Options::Sort_TimeLastModified))
+    {
+        sortItemsLastModified(itemList);
+
+        needsSorting = false;
+    }
+
+    resolveLinks(itemList);
+}
+
+//-----------------------------------------------------------------------
+
+void FarrMostRecentlyUsedPlugin::addMruApplications(ItemList& itemList, const OrderedStringCollection& types)
+{
+    if(types.empty())
+    {
+        // take all
+        TypeToGroupNameAndRegistryPaths::const_iterator typeIterator = _typeToGroupNameAndRegistryPaths.begin();
+        const TypeToGroupNameAndRegistryPaths::const_iterator typesEnd = _typeToGroupNameAndRegistryPaths.end();
+
+        for( ; typeIterator != typesEnd; ++typeIterator)
+        {
+            addType(typeIterator, itemList);
+        }
+    }
+    else
+    {
+        // take only the specified ones
+        OrderedStringCollection::const_iterator typeIterator = types.begin();
+        const OrderedStringCollection::const_iterator typesEnd = types.end();
+
+        for( ; typeIterator != typesEnd; ++typeIterator)
+        {
+            const std::string& type = *typeIterator;
+
+            // is the option a known type
+            const TypeToGroupNameAndRegistryPaths::const_iterator typeIterator = _typeToGroupNameAndRegistryPaths.find(type);
+            if(typeIterator != _typeToGroupNameAndRegistryPaths.end())
+            {
+                addType(typeIterator, itemList);
+            }
+        }
+    }
+}
+
+//-----------------------------------------------------------------------
+
+void FarrMostRecentlyUsedPlugin::addType(const TypeToGroupNameAndRegistryPaths::const_iterator& typeIterator, ItemList& itemList)
+{
+    const GroupNameAndRegistryPaths& groupNameAndRegistryPaths = typeIterator->second;
+    const std::string& groupName = groupNameAndRegistryPaths.first;
+    const RegistryPaths& registryPaths = groupNameAndRegistryPaths.second;
+
+    RegistryPaths::const_iterator registryPathIterator = registryPaths.begin();
+    const RegistryPaths::const_iterator registryPathsEnd = registryPaths.end();
+    for( ; registryPathIterator != registryPathsEnd; ++registryPathIterator)
+    {
+        const std::string& registryPath = *registryPathIterator;
+
+        addMRUs(groupName, registryPath, itemList);
     }
 }
 
@@ -350,14 +459,17 @@ void FarrMostRecentlyUsedPlugin::showOptions()
 
 //-----------------------------------------------------------------------
 
-void FarrMostRecentlyUsedPlugin::extractOptionsAndExtensions(const std::string& rawSearchString, OrderedStringCollection& options, OrderedStringCollection& extensions) const
+void FarrMostRecentlyUsedPlugin::extractSearchOptions(std::string& searchString,
+                                                      OrderedStringCollection& options, 
+                                                      OrderedStringCollection& types,
+                                                      OrderedStringCollection& extensions) const
 {
-    std::string::size_type startPos = rawSearchString.find('+');
+    std::string::size_type startPos = searchString.find('+');
     while(startPos != std::string::npos)
     {
-        const std::string::size_type endPos = rawSearchString.find(' ', startPos);
+        const std::string::size_type endPos = searchString.find(' ', startPos);
         
-        std::string optionString = rawSearchString.substr(startPos + 1, (endPos != std::string::npos) ? endPos - startPos - 1 : std::string::npos);
+        std::string optionString = searchString.substr(startPos + 1, (endPos != std::string::npos) ? endPos - startPos - 1 : std::string::npos);
         if(!optionString.empty())
         {
             if(optionString[0] == '.')
@@ -366,12 +478,18 @@ void FarrMostRecentlyUsedPlugin::extractOptionsAndExtensions(const std::string& 
             }
             else
             {
-                if(_farrOptions.find(optionString) == _farrOptions.end())
+                if(_mruOptions.find(optionString) != _mruOptions.end())
                 {
                     options.insert(optionString);
                 }
+                else if(_farrOptions.find(optionString) == _farrOptions.end())
+                {
+                    types.insert(optionString);
+                }
             }
         }
+
+        searchString.erase(startPos, (endPos != std::string::npos) ? endPos - startPos + 1 : std::string::npos);
 
         if(endPos == std::string::npos)
         {
@@ -379,8 +497,14 @@ void FarrMostRecentlyUsedPlugin::extractOptionsAndExtensions(const std::string& 
         }
         else
         {
-            startPos = rawSearchString.find('+', endPos + 1);
+            startPos = searchString.find('+');
         }
+    }
+
+    // remove trailing space
+    if(!searchString.empty() && (searchString[searchString.length() - 1] == ' '))
+    {
+        searchString.erase(searchString.length() - 1);
     }
 }
 

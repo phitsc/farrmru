@@ -11,6 +11,7 @@ struct Item
         Type_File,
         Type_Folder,
         Type_URL,
+        Type_Alias,
     };
 
     Item(const std::string& groupName_, const std::string& path_, Type type_)
