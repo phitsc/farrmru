@@ -22,40 +22,42 @@ public:
     END_MSG_MAP()
 
 private:
-    void initializeCheckBox(CButton& button, int id, const char* optionName, bool defaultValue)
-    {
-        button = GetDlgItem(id);
-        button.SetCheck(_optionsFile.getValue(optionName, defaultValue) ? BST_CHECKED : BST_UNCHECKED);
-    }
-
-    void storeCheckBoxValue(const CButton& button, const char* optionName)
-    {
-        _optionsFile.setValue(optionName, (button.GetCheck() == BST_CHECKED));
-    }
-
     LRESULT onInitDialog(UINT, WPARAM, LPARAM, BOOL&)
     {
-        initializeCheckBox(_ignoreDirectoriesCheck, IDC_CHECK_IGNORE_DIRECTORIES, "IgnoreDirectories", true);
-        initializeCheckBox(_includeUNCPathsCheck, IDC_CHECK_INCLUDE_NETWORK_FILES, "IncludeUNCPaths", true);
-        initializeCheckBox(_simpelDirectoryCheckCheck, IDC_CHECK_SIMPLE_DIR_CHECK, "SimpleDirectoryCheck", true);
-        initializeCheckBox(_showGroupNameCheck, IDC_CHECK_SHOW_GROUP_NAME, "ShowGroupName", false);
+        initializeCheckBox(_removeUNCFiles, IDC_CHECK_REMOVE_UNC, "RemoveUNCFiles");
+        initializeCheckBox(_removeDirectories, IDC_CHECK_REMOVE_DIRECTORIES, "RemoveDirectories");
+        initializeCheckBox(_simpleDirectoryCheck, IDC_CHECK_SIMPLE_DIR_CHECK, "SimpleDirectoryCheck");
+        initializeCheckBox(_removeNonExistingFiles, IDC_CHECK_REMOVE_NON_EXISTENT, "RemoveNonexistentFiles");
+        initializeCheckBox(_ignoreExistenceCheckUNCPaths, IDC_CHECK_DONT_CHECK_UNC_EXISTENCE, "IgnoreExistenceCheckUNCFiles");
 
-        _sortNoneRadio = GetDlgItem(IDC_RADIO_NOSORTING);
-        _sortLastAccessedRadio = GetDlgItem(IDC_RADIO_SORT_DATELASTMODIFIED);
-        _sortAlphabeticallyRadio = GetDlgItem(IDC_RADIO_SORT_ALPHA);
+        initializeCheckBox(_showGroupName, IDC_CHECK_SHOW_GROUP_NAME, "ShowGroupName");
 
-        switch(_optionsFile.getValue("SortMode", 0L))
+        _sortNone = GetDlgItem(IDC_RADIO_NOSORTING);
+        _sortLastAccessed = GetDlgItem(IDC_RADIO_SORT_DATE_ACCESSED);
+        _sortLastModified = GetDlgItem(IDC_RADIO_SORT_DATE_MODIFIED);
+        _sortCreated = GetDlgItem(IDC_RADIO_SORT_DATE_CREATED);
+        _sortAlphabetically = GetDlgItem(IDC_RADIO_SORT_ALPHA);
+
+        switch(_optionsFile.getValue("SortMode", 1L))
         {
-        case 0:
-            _sortNoneRadio.SetCheck(BST_CHECKED);
+        case Options::Sort_NoSorting:
+            _sortNone.SetCheck(BST_CHECKED);
             break;
 
-        case 1:
-            _sortLastAccessedRadio.SetCheck(BST_CHECKED);
+        case Options::Sort_TimeLastAccessed:
+            _sortLastAccessed.SetCheck(BST_CHECKED);
             break;
 
-        case 2:
-            _sortAlphabeticallyRadio.SetCheck(BST_CHECKED);
+        case Options::Sort_TimeLastModified:
+            _sortLastModified.SetCheck(BST_CHECKED);
+            break;
+
+        case Options::Sort_TimeCreated:
+            _sortCreated.SetCheck(BST_CHECKED);
+            break;
+
+        case Options::Sort_Alphabetically:
+            _sortAlphabetically.SetCheck(BST_CHECKED);
             break;
         }
 
@@ -64,28 +66,40 @@ private:
 
     LRESULT onOk(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/)
     {
-        storeCheckBoxValue(_ignoreDirectoriesCheck, "IgnoreDirectories");
-        storeCheckBoxValue(_includeUNCPathsCheck, "IncludeUNCPaths");
-        storeCheckBoxValue(_simpelDirectoryCheckCheck, "SimpleDirectoryCheck");
-        storeCheckBoxValue(_showGroupNameCheck, "ShowGroupName");
+        storeCheckBoxValue(_removeUNCFiles, "RemoveUNCFiles");
+        storeCheckBoxValue(_removeDirectories, "RemoveDirectories");
+        storeCheckBoxValue(_simpleDirectoryCheck, "SimpleDirectoryCheck");
+        storeCheckBoxValue(_removeNonExistingFiles, "RemoveNonexistentFiles");
+        storeCheckBoxValue(_ignoreExistenceCheckUNCPaths, "IgnoreExistenceCheckUNCFiles");
 
-        if(_sortNoneRadio.GetCheck() == BST_CHECKED)
+        storeCheckBoxValue(_showGroupName, "ShowGroupName");
+
+        if(_sortNone.GetCheck() == BST_CHECKED)
         {
-            _optionsFile.setValue("SortMode", 0L);
+            _optionsFile.setValue("SortMode", (long)Options::Sort_NoSorting);
         }
-        else if(_sortLastAccessedRadio.GetCheck() == BST_CHECKED)
+        else if(_sortLastAccessed.GetCheck() == BST_CHECKED)
         {
-            _optionsFile.setValue("SortMode", 1L);
+            _optionsFile.setValue("SortMode", (long)Options::Sort_TimeLastAccessed);
         }
-        else if(_sortAlphabeticallyRadio.GetCheck() == BST_CHECKED)
+        else if(_sortLastModified.GetCheck() == BST_CHECKED)
         {
-            _optionsFile.setValue("SortMode", 2L);
+            _optionsFile.setValue("SortMode", (long)Options::Sort_TimeLastModified);
+        }
+        else if(_sortCreated.GetCheck() == BST_CHECKED)
+        {
+            _optionsFile.setValue("SortMode", (long)Options::Sort_TimeCreated);
+        }
+        else if(_sortAlphabetically.GetCheck() == BST_CHECKED)
+        {
+            _optionsFile.setValue("SortMode", (long)Options::Sort_Alphabetically);
         }
 
         EndDialog(IDOK);
 
         return 0;
     }
+
     LRESULT onCancel(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/)
     {
         EndDialog(IDCANCEL);
@@ -93,17 +107,33 @@ private:
         return 0;
     }
 
+    void initializeCheckBox(CButton& button, int id, const char* optionName)
+    {
+        button = GetDlgItem(id);
+        button.SetCheck(_optionsFile.getValue(optionName, false) ? BST_CHECKED : BST_UNCHECKED);
+    }
+
+    void storeCheckBoxValue(const CButton& button, const char* optionName)
+    {
+        _optionsFile.setValue(optionName, (button.GetCheck() == BST_CHECKED));
+    }
+
 private:
     OptionsFile& _optionsFile;
 
-    CButton _ignoreDirectoriesCheck;
-    CButton _includeUNCPathsCheck;
-    CButton _simpelDirectoryCheckCheck;
-    CButton _showGroupNameCheck;
+    CButton _removeUNCFiles;
+    CButton _removeDirectories;
+    CButton _simpleDirectoryCheck;
+    CButton _removeNonExistingFiles;
+    CButton _ignoreExistenceCheckUNCPaths;
 
-    CButton _sortNoneRadio;
-    CButton _sortLastAccessedRadio;
-    CButton _sortAlphabeticallyRadio;
+    CButton _sortNone;
+    CButton _sortLastAccessed;
+    CButton _sortLastModified;
+    CButton _sortCreated;
+    CButton _sortAlphabetically;
+
+    CButton _showGroupName;
 };
 
 //-----------------------------------------------------------------------

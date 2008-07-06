@@ -22,12 +22,17 @@ class FileList
                 Type_Directory
             };
 
-            File(const std::string path_, Type type_)
-                :path(path_), type(type_)
+            File(const std::string path_, Type type_, 
+                 const FILETIME& lastAccessTime_, const FILETIME& lastModifiedTime_, const FILETIME& creationTime_)
+                :path(path_), type(type_), 
+                 lastAccessTime(lastAccessTime_), lastModifiedTime(lastModifiedTime_), creationTime(creationTime_)
             {}
 
             std::string path;
-            Type type;
+            Type        type;
+            FILETIME    lastAccessTime;
+            FILETIME    lastModifiedTime;
+            FILETIME    creationTime;
         };
         typedef std::list<File> Filenames;
         typedef Filenames::const_iterator const_iterator;
@@ -62,7 +67,8 @@ class FileList
                 if(useFile(findData, typeFilter))
                 {
                     bool isDirectory = ((findData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) == FILE_ATTRIBUTE_DIRECTORY);
-                    _filenames.push_back(File(std::string(thePath) + std::string(findData.cFileName), isDirectory ? File::Type_Directory : File::Type_File));
+                    _filenames.push_back(File(std::string(thePath) + std::string(findData.cFileName), isDirectory ? File::Type_Directory : File::Type_File, 
+                                              findData.ftLastAccessTime, findData.ftLastWriteTime, findData.ftCreationTime));
                 }
 
                 while(TRUE == FindNextFile(hFindFile, &findData))
@@ -70,7 +76,8 @@ class FileList
                     if(useFile(findData, typeFilter))
                     {
                         bool isDirectory = ((findData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) == FILE_ATTRIBUTE_DIRECTORY);
-                        _filenames.push_back(File(std::string(thePath) + std::string(findData.cFileName), isDirectory ? File::Type_Directory : File::Type_File));
+                        _filenames.push_back(File(std::string(thePath) + std::string(findData.cFileName), isDirectory ? File::Type_Directory : File::Type_File, 
+                                                  findData.ftLastAccessTime, findData.ftLastWriteTime, findData.ftCreationTime));
                     }
                 }
 				FindClose(hFindFile);

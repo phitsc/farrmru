@@ -17,13 +17,22 @@ struct Item;
 
 //-----------------------------------------------------------------------
 
-class CompareLastModified
+class CompareFiletime
 {
 public:
+    enum FileTimeType
+    {
+        LastAccessed,
+        LastModifed,
+        Created
+    };
+
+    CompareFiletime(FileTimeType fileTimeType);
+
     bool operator()(const Item& leftItem, const Item& rightItem) const;
 
 private:
-    HANDLE openFile(const std::string& fileName) const;
+    FileTimeType _fileTimeType;
 };
 
 //-----------------------------------------------------------------------
@@ -36,27 +45,49 @@ public:
 
 //-----------------------------------------------------------------------
 
-class NeedsToBeRemoved
+class RemoveItemsStage1
+{
+public:
+    RemoveItemsStage1(const Options& options);
+
+    bool operator()(const Item& item) const;
+
+private:
+    const Options& _options;
+
+    static bool isUNCPath(const std::string& path);
+    static bool fileExists(const std::string& path);
+    static bool isDirectory(const std::string& path, bool simpleCheck);
+};
+
+//-----------------------------------------------------------------------
+
+class RemoveItemsStage2
 {
 public:
     typedef std::set<std::string> OrderedStringCollection;
 
-    NeedsToBeRemoved(const Options& options, Options::SortMode sortMode, const OrderedStringCollection& extensions, const std::string& searchString);
+    RemoveItemsStage2(const OrderedStringCollection& extensions, const OrderedStringCollection& groups, const std::string& searchString, bool noSubstringFiltering);
 
     bool operator()(const Item& item) const;
 
 private:
     bool doesntContainSearchstringIgnoringCase(const std::string& path) const;
 
-    static bool isUNCPath(const std::string& path);
-    bool fileExists(const Item& item) const;
-    bool isDirectory(const Item& item) const;
-
-    const Options& _options;
-    const Options::SortMode _sortMode;
     const OrderedStringCollection& _extensions;
-    const std::string& _searchString;
+    const OrderedStringCollection& _groups;
+    const std::string&             _searchString;
+    bool                           _noSubstringFiltering;
+};
 
+//-----------------------------------------------------------------------
+
+class RemoveDuplicates
+{
+public:
+    bool operator()(const Item& item) const;
+
+private:
     typedef std::set<std::string> Items;
     mutable Items _items;
 };
@@ -66,4 +97,3 @@ private:
 void tolower(std::string& toConvert);
 
 //-----------------------------------------------------------------------
-

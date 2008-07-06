@@ -319,8 +319,6 @@ PREFUNCDEF BOOL EFuncName_Inform_SearchBegins(const char* searchstring_raw, cons
     if (!explicitinvocation)
         return FALSE;
 
-    OutputDebugString("EFuncName_Inform_SearchBegins");
-
     return DoFarrSearchBegin(searchstring_raw, searchstring_lc_nokeywords);
 }
 //-----------------------------------------------------------------------
@@ -342,8 +340,6 @@ PREFUNCDEF BOOL EFuncName_Inform_SearchBegins(const char* searchstring_raw, cons
 //
 PREFUNCDEF BOOL EFuncName_Inform_RegexSearchMatch(const char* searchstring_raw, const char* searchstring_lc_nokeywords, int /*regexgroups*/, char** /*regexcharps*/)
 {
-    OutputDebugString("EFuncName_Inform_RegexSearchMatch");
-
     // call farr search - nothing to do really for this plugin but return all results
     return DoFarrSearchBegin(searchstring_raw, searchstring_lc_nokeywords);
 }
@@ -567,7 +563,7 @@ PREFUNCDEF BOOL EFuncName_Request_ItemResultByIndex(int resultindex, char *destb
     {
         const bool showGroupName = farrMostRecentlyUsedPlugin->showGroupName();
 
-        strncpy(destbuf_groupname, showGroupName ? item.groupName.c_str() : "", maxlen);
+        strncpy(destbuf_groupname, showGroupName ? farrMostRecentlyUsedPlugin->getGroupDescription(item.groupName).c_str() : "", maxlen);
         strncpy(destbuf_caption, PathFindFileName(item.path.c_str()), maxlen);
         strncpy(destbuf_path, item.path.c_str(), maxlen);
 

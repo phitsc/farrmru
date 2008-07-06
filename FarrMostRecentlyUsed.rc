@@ -112,25 +112,32 @@ END
 // Dialog
 //
 
-IDD_DIALOG_OPTIONS DIALOGEX 0, 0, 206, 157
+IDD_DIALOG_OPTIONS DIALOGEX 0, 0, 220, 295
 STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "FARR Most Recently Used"
 FONT 8, "MS Shell Dlg", 400, 0, 0x1
 BEGIN
-    DEFPUSHBUTTON   "OK",IDOK,96,136,50,14
-    PUSHBUTTON      "Cancel",IDCANCEL,149,136,50,14
-    CONTROL         "Ignore directories",IDC_CHECK_IGNORE_DIRECTORIES,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,7,7,73,10
-    CONTROL         "Include UNC paths",IDC_CHECK_INCLUDE_NETWORK_FILES,
-                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,7,20,75,10
-    GROUPBOX        "Sorting",IDC_STATIC,7,67,136,54
-    CONTROL         "Do not sort (fastest)",IDC_RADIO_NOSORTING,"Button",BS_AUTORADIOBUTTON,15,80,82,10
-    CONTROL         "By date last modified",IDC_RADIO_SORT_DATELASTMODIFIED,
-                    "Button",BS_AUTORADIOBUTTON,15,93,83,10
-    CONTROL         "Alphabetically",IDC_RADIO_SORT_ALPHA,"Button",BS_AUTORADIOBUTTON,15,106,60,10
+    DEFPUSHBUTTON   "OK",IDOK,96,274,50,14
+    PUSHBUTTON      "Cancel",IDCANCEL,163,274,50,14
+    GROUPBOX        "Sort",IDC_STATIC,7,102,163,84
+    CONTROL         "Do not sort (fastest)",IDC_RADIO_NOSORTING,"Button",BS_AUTORADIOBUTTON,15,115,82,10
+    CONTROL         "By date last modified",IDC_RADIO_SORT_DATE_MODIFIED,
+                    "Button",BS_AUTORADIOBUTTON,15,141,83,10
+    CONTROL         "Alphabetically",IDC_RADIO_SORT_ALPHA,"Button",BS_AUTORADIOBUTTON,15,167,60,10
     CONTROL         "Show group name instead of path",IDC_CHECK_SHOW_GROUP_NAME,
-                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,7,46,124,10
-    CONTROL         "Simplified directory check",IDC_CHECK_SIMPLE_DIR_CHECK,
-                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,20,33,96,10
+                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,15,213,124,10
+    GROUPBOX        "Filter (remove from result list)",IDC_STATIC,7,7,163,85
+    CONTROL         "UNC files",IDC_CHECK_REMOVE_UNC,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,15,20,45,10
+    CONTROL         "Nonexistent files",IDC_CHECK_REMOVE_NON_EXISTENT,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,15,33,69,10
+    CONTROL         "Don't check existence of UNC files",IDC_CHECK_DONT_CHECK_UNC_EXISTENCE,
+                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,26,46,125,10
+    CONTROL         "By date last accessed",IDC_RADIO_SORT_DATE_ACCESSED,
+                    "Button",BS_AUTORADIOBUTTON,15,128,92,10
+    CONTROL         "By date created",IDC_RADIO_SORT_DATE_CREATED,"Button",BS_AUTORADIOBUTTON,15,154,67,10
+    GROUPBOX        "Display",IDC_STATIC,7,200,163,40
+    CONTROL         "Simplified directory check (UNC only)",IDC_CHECK_SIMPLE_DIR_CHECK,
+                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,26,72,138,10
+    CONTROL         "Directories",IDC_CHECK_REMOVE_DIRECTORIES,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,15,59,50,10
 END
 
 
@@ -145,9 +152,9 @@ BEGIN
     IDD_DIALOG_OPTIONS, DIALOG
     BEGIN
         LEFTMARGIN, 7
-        RIGHTMARGIN, 199
+        RIGHTMARGIN, 213
         TOPMARGIN, 7
-        BOTTOMMARGIN, 150
+        BOTTOMMARGIN, 288
     END
 END
 #endif    // APSTUDIO_INVOKED
