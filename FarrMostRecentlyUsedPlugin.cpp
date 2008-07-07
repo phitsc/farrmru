@@ -19,6 +19,8 @@ const char* Option_ByDate   = "bydate";
 const char* Option_ByMod    = "bymod";
 const char* Option_ByCreate = "bycreate";
 
+const char* MyRecentDocuments_GroupName = "recent";
+
 //-----------------------------------------------------------------------
 
 FarrMostRecentlyUsedPlugin::FarrMostRecentlyUsedPlugin(const std::string& modulePath, IShellLink* shellLinkRawPtr) :
@@ -51,9 +53,10 @@ _sortModeCurrentSearch(Options::Sort_NoSorting)
         char tempPath[MAX_PATH];
         GetTempPath(MAX_PATH, tempPath);
         PathAppend(tempPath, "FarrMostRecentlyUsed.config.old");
-        CopyFile(configFileName.c_str(), tempPath, TRUE);
-
-        OutputDebugString(tempPath);
+        if(CopyFile(configFileName.c_str(), tempPath, TRUE))
+        {
+            OutputDebugString(tempPath);
+        }
     }
 
     processConfigFile(configFileName);
@@ -99,16 +102,28 @@ void FarrMostRecentlyUsedPlugin::processConfigFile(const std::string& configFile
                         currentGroupName = line;
                     }
 
+                    tolower(currentGroupName);
+                    if(currentGroupName == MyRecentDocuments_GroupName)
+                    {
+                        currentGroupName.clear();
+                    }
+
                     // adds entry
-                    GroupDescriptionAndRegistryPaths& groupDescriptionAndRegistryPaths = _groupNameToDescriptionAndRegistryPaths[currentGroupName];
-                    groupDescriptionAndRegistryPaths.first = groupDescription;
+                    if(!currentGroupName.empty())
+                    {
+                        GroupDescriptionAndRegistryPaths& groupDescriptionAndRegistryPaths = _groupNameToDescriptionAndRegistryPaths[currentGroupName];
+                        groupDescriptionAndRegistryPaths.first = groupDescription;
+                    }
                 }
                 else
                 {
-                    GroupDescriptionAndRegistryPaths& groupDescriptionAndRegistryPaths = _groupNameToDescriptionAndRegistryPaths[currentGroupName];
-                    RegistryPaths& registryPaths = groupDescriptionAndRegistryPaths.second;
+                    if(!currentGroupName.empty())
+                    {
+                        GroupDescriptionAndRegistryPaths& groupDescriptionAndRegistryPaths = _groupNameToDescriptionAndRegistryPaths[currentGroupName];
+                        RegistryPaths& registryPaths = groupDescriptionAndRegistryPaths.second;
 
-                    registryPaths.insert(line);
+                        registryPaths.insert(line);
+                    }
                 }
             }
         }
@@ -190,6 +205,7 @@ void FarrMostRecentlyUsedPlugin::search(const char* rawSearchString)
                 break;
 
             case Mode_User:
+                addUserDefinedGroups();
                 break;
 
             case Mode_Menu:
@@ -264,7 +280,7 @@ void FarrMostRecentlyUsedPlugin::addMenuItems()
     _itemCache.push_back(Item("Alias mrum", "List only 'My Recent Document'|restartsearch mrum", Item::Type_Alias));
     _itemCache.push_back(Item("Alias mrup", "List most recently used items of configured programs|restartsearch mrup", Item::Type_Alias));
     _itemCache.push_back(Item("Alias mrua", "List all most recently used items|restartsearch mrua", Item::Type_Alias));
-    //_itemCache.push_back(Item("Alias mruu", "List user defined most recently used items|restartsearch mruu", Item::Type_Alias));
+    _itemCache.push_back(Item("Alias mruu", "List user defined most recently used items|restartsearch mruu", Item::Type_Alias));
 }
 
 //-----------------------------------------------------------------------
@@ -284,7 +300,7 @@ void FarrMostRecentlyUsedPlugin::addMyRecentDocuments()
             const FileList::File& file = *it;
 
             // use links last modified time as target files last access time
-            _itemCache.push_back(Item("recent", file.path, (file.type == FileList::File::Type_Directory) ? Item::Type_Folder : Item::Type_File, 
+            _itemCache.push_back(Item(MyRecentDocuments_GroupName, file.path, (file.type == FileList::File::Type_Directory) ? Item::Type_Folder : Item::Type_File, 
                                       file.lastModifiedTime));
         }
 
@@ -304,6 +320,28 @@ void FarrMostRecentlyUsedPlugin::addMruApplications()
     for( ; groupNameIterator != groupNamesEnd; ++groupNameIterator)
     {
         addType(groupNameIterator, _itemCache);
+    }
+}
+
+//-----------------------------------------------------------------------
+
+void FarrMostRecentlyUsedPlugin::addUserDefinedGroups()
+{
+    if(_options.userDefinedGroups.contains(MyRecentDocuments_GroupName))
+    {
+        addMyRecentDocuments();
+    }
+
+    GroupNameToDescriptionAndRegistryPaths::const_iterator groupNameIterator = _groupNameToDescriptionAndRegistryPaths.begin();
+    const GroupNameToDescriptionAndRegistryPaths::const_iterator groupNamesEnd = _groupNameToDescriptionAndRegistryPaths.end();
+
+    for( ; groupNameIterator != groupNamesEnd; ++groupNameIterator)
+    {
+        const std::string& groupName = groupNameIterator->first;
+        if(_options.userDefinedGroups.contains(groupName))
+        {
+            addType(groupNameIterator, _itemCache);
+        }
     }
 }
 
@@ -486,7 +524,19 @@ const Item& FarrMostRecentlyUsedPlugin::getItem(const ItemVector::size_type& ind
 
 void FarrMostRecentlyUsedPlugin::showOptions()
 {
-    OptionsDialog dialog(_optionsFile);
+    Groups groups;
+
+    groups.push_back(Group(MyRecentDocuments_GroupName, "My Recent Documents"));
+
+    GroupNameToDescriptionAndRegistryPaths::const_iterator it = _groupNameToDescriptionAndRegistryPaths.begin();
+    GroupNameToDescriptionAndRegistryPaths::const_iterator end = _groupNameToDescriptionAndRegistryPaths.end();
+
+    for( ; it != end; ++it)
+    {
+        groups.push_back(Group(it->first, it->second.first));
+    }
+
+    OptionsDialog dialog(_optionsFile, groups);
     if(dialog.DoModal() == IDOK)
     {
         _options.update(_optionsFile);

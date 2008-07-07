@@ -39,6 +39,20 @@ public:
         WritePrivateProfileString("Options", optionName.c_str(), stream.str().c_str(), _filePath.c_str());
     }
 
+    std::string getValue(const std::string& optionName, const char* defaultValue) const
+    {
+        const unsigned long MaxValueLength = 4096;
+        char value[MaxValueLength] = { 0 };
+        GetPrivateProfileString("Options", optionName.c_str(), defaultValue, value, MaxValueLength, _filePath.c_str());
+
+        return value;
+    }
+
+    void setValue(const std::string& optionName, const std::string& value)
+    {
+        WritePrivateProfileString("Options", optionName.c_str(), value.c_str(), _filePath.c_str());
+    }
+
 private:
     std::string _filePath;
 };

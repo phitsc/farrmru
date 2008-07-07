@@ -5,7 +5,7 @@
     <IconFile>mostrecentlyused.ico</IconFile>
     
     <!-- version info of locally installed current version, and simple remote version file -->
-    <Version>0.2.0</Version>
+    <Version>0.3.0</Version>
     <VersionFileRemote>http://farrmru.objecttechnology.com/versioninfo.xml</VersionFileRemote>
    
     <!-- where to get more info about the app remotely, only queried once an update is discovered -->

@@ -14,6 +14,8 @@
 #define IDC_CHECK_DONT_CHECK_UNC_EXISTENCE 3015
 #define IDC_RADIO_SORT_DATE_ACCESSED    3016
 #define IDC_RADIO_SORT_DATE_CREATED     3017
+#define IDC_LIST3                       3021
+#define IDC_LIST_USER_DEFINED           3021
 
 // Next default values for new objects
 // 
@@ -21,7 +23,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        3001
 #define _APS_NEXT_COMMAND_VALUE         32771
-#define _APS_NEXT_CONTROL_VALUE         3018
+#define _APS_NEXT_CONTROL_VALUE         3022
 #define _APS_NEXT_SYMED_VALUE           3000
 #endif
 #endif

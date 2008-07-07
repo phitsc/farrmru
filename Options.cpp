@@ -22,6 +22,8 @@ void Options::update(const OptionsFile& optionsFile)
     sortMode = (SortMode)optionsFile.getValue("SortMode", (long)Sort_TimeLastAccessed);
 
     showGroupName = optionsFile.getValue("ShowGroupName", false);
+
+    userDefinedGroups = optionsFile.getValue("UserDefinedGroups", "");
 }
 
 //-----------------------------------------------------------------------

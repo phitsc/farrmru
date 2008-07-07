@@ -63,6 +63,7 @@ private:
     void addMenuItems();
     void addMyRecentDocuments();
     void addMruApplications();
+    void addUserDefinedGroups();
 
     static bool hasMRUList(const RegistryKey& registryKey);
     static void addMRUs(const std::string& groupName, const std::string& keyPath, ItemList& itemList);

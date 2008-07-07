@@ -32,6 +32,7 @@
 #include <atlapp.h>
 #include <atlwin.h>
 #include <atlctrls.h>
+#include <atlctrlx.h>
 #include <atlmisc.h>
 #include <shlwapi.h>
 

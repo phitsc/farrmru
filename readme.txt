@@ -19,10 +19,11 @@ Copy all files into the FarrMostRecentlyUsed plugin directory (usually C:\Progra
 Usage
 =====================
 Use the following aliases to give you a list of your most recently used files:
-- mru  : shows a simple menu with the below aliases
-- mrum : shows files in your 'My Recent Documents' (XP) or 'Recent Items' (Vista, but see known issues) folder
-- mrup : shows files of configured programs, storing their MRU files in the registry
-- mrua : show a combined list of files out of mrum and mrup
+- mru  : Shows a simple menu with the below aliases
+- mrum : Shows files in your 'My Recent Documents' (XP) or 'Recent Items' (Vista, but see known issues) folder
+- mrup : Shows files of configured programs, storing their MRU files in the registry
+- mrua : Show a combined list of files out of mrum and mrup
+- mruu : Show files from selected groups only (selectable in the options dialog)
 
 Use the following modifier keywords to change the search:
 +byname   : Force sorting by name
@@ -31,7 +32,7 @@ Use the following modifier keywords to change the search:
 +bycreate : Force sorting by date created
 +.[ext]   : Filter results by file extension [ext]. More than one can be used, e.g. +.h +.cpp
 
-To show a list of most recently used files for selected applications, use the following modifers:
+To show a list of most recently used files for selected applications, use the following modifiers:
 +foxit   : Foxit Reader
 +km      : KMPlayer
 +msvc8   : MS Visual Studio 2005
@@ -47,6 +48,9 @@ To show a list of most recently used files for selected applications, use the fo
 +winuae  : WinUAE
 +wmp     : Windows Media Player
 +wordpad : Wordpad
+
+(built-in group for My Recent Documents)
++recent  : My Recent Documents
 
 
 Options
@@ -89,7 +93,7 @@ Details on File Dates
 
 Known issues
 =====================
-Clearing the 'Recent Items' list on Windows Vista will not make these files dissapear from the FARR MRU result list. The FARR MRU plugin uses the user's 'Recent' directory as its source. Windows Vista does not clear that directory when the user selects 'Clear Recent Items List' in the 'Recent Items' context menu. 
+Clearing the 'Recent Items' list on Windows Vista will not make these files disappear from the FARR MRU result list. The FARR MRU plugin uses the user's 'Recent' directory as its source. Windows Vista does not clear that directory when the user selects 'Clear Recent Items List' in the 'Recent Items' context menu. 
 
 
 Credits
@@ -106,7 +110,11 @@ Version history
 =====================
 0.3.0
 - Added simple menu (type mru)
-- Added mrum (My Recent Documents), mrup (Recent Application documents) and mrua (All recent documents) aliases
+- Added special aliases:
+  - mrum (My Recent Documents)
+  - mrup (Recent Application documents)
+  - mrua (All recent documents)
+  - mruu (User selected groups of applications / My Recent Documents)
 - Much improved filtering and sorting
 - Show icons for UNC files
 

@@ -312,6 +312,10 @@
 				RelativePath=".\stdafx.h"
 				>
 			</File>
+			<File
+				RelativePath=".\UserDefinedGroups.h"
+				>
+			</File>
 		</Filter>
 		<Filter
 			Name="Resource Files"

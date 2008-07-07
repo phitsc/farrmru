@@ -1,8 +1,24 @@
 #include "resource.h"
 
 #include "OptionsFile.h"
+#include "UserDefinedGroups.h"
 
 #include <sstream>
+#include <vector>
+
+//-----------------------------------------------------------------------
+
+struct Group
+{
+    Group(std::string name_, std::string description_)
+        :name(name_), description(description_)
+    {}
+
+    std::string name;
+    std::string description;
+};
+
+typedef std::vector<Group> Groups;
 
 //-----------------------------------------------------------------------
 
@@ -11,8 +27,9 @@ class OptionsDialog : public CDialogImpl<OptionsDialog>
 public:
     enum { IDD = IDD_DIALOG_OPTIONS };
 
-    OptionsDialog(OptionsFile& optionsFile)
-        :_optionsFile(optionsFile)
+    OptionsDialog(OptionsFile& optionsFile, Groups& groups)
+        :_optionsFile(optionsFile), 
+         _groups(groups)
     {}
 
     BEGIN_MSG_MAP(OptionsDialog)
@@ -32,34 +49,9 @@ private:
 
         initializeCheckBox(_showGroupName, IDC_CHECK_SHOW_GROUP_NAME, "ShowGroupName");
 
-        _sortNone = GetDlgItem(IDC_RADIO_NOSORTING);
-        _sortLastAccessed = GetDlgItem(IDC_RADIO_SORT_DATE_ACCESSED);
-        _sortLastModified = GetDlgItem(IDC_RADIO_SORT_DATE_MODIFIED);
-        _sortCreated = GetDlgItem(IDC_RADIO_SORT_DATE_CREATED);
-        _sortAlphabetically = GetDlgItem(IDC_RADIO_SORT_ALPHA);
+        initSortMode();
 
-        switch(_optionsFile.getValue("SortMode", 1L))
-        {
-        case Options::Sort_NoSorting:
-            _sortNone.SetCheck(BST_CHECKED);
-            break;
-
-        case Options::Sort_TimeLastAccessed:
-            _sortLastAccessed.SetCheck(BST_CHECKED);
-            break;
-
-        case Options::Sort_TimeLastModified:
-            _sortLastModified.SetCheck(BST_CHECKED);
-            break;
-
-        case Options::Sort_TimeCreated:
-            _sortCreated.SetCheck(BST_CHECKED);
-            break;
-
-        case Options::Sort_Alphabetically:
-            _sortAlphabetically.SetCheck(BST_CHECKED);
-            break;
-        }
+        initUserDefinedGroups();
 
         return 0;
     }
@@ -95,6 +87,8 @@ private:
             _optionsFile.setValue("SortMode", (long)Options::Sort_Alphabetically);
         }
 
+        storeUserDefinedGroups();
+
         EndDialog(IDOK);
 
         return 0;
@@ -107,6 +101,7 @@ private:
         return 0;
     }
 
+private:
     void initializeCheckBox(CButton& button, int id, const char* optionName)
     {
         button = GetDlgItem(id);
@@ -118,8 +113,83 @@ private:
         _optionsFile.setValue(optionName, (button.GetCheck() == BST_CHECKED));
     }
 
-private:
+    void initSortMode()
+    {
+        _sortNone = GetDlgItem(IDC_RADIO_NOSORTING);
+        _sortLastAccessed = GetDlgItem(IDC_RADIO_SORT_DATE_ACCESSED);
+        _sortLastModified = GetDlgItem(IDC_RADIO_SORT_DATE_MODIFIED);
+        _sortCreated = GetDlgItem(IDC_RADIO_SORT_DATE_CREATED);
+        _sortAlphabetically = GetDlgItem(IDC_RADIO_SORT_ALPHA);
+
+        switch(_optionsFile.getValue("SortMode", 1L))
+        {
+        case Options::Sort_NoSorting:
+            _sortNone.SetCheck(BST_CHECKED);
+            break;
+
+        case Options::Sort_TimeLastAccessed:
+            _sortLastAccessed.SetCheck(BST_CHECKED);
+            break;
+
+        case Options::Sort_TimeLastModified:
+            _sortLastModified.SetCheck(BST_CHECKED);
+            break;
+
+        case Options::Sort_TimeCreated:
+            _sortCreated.SetCheck(BST_CHECKED);
+            break;
+
+        case Options::Sort_Alphabetically:
+            _sortAlphabetically.SetCheck(BST_CHECKED);
+            break;
+        }
+    }
+
+    void initUserDefinedGroups()
+    {
+        _userDefined.SubclassWindow(GetDlgItem(IDC_LIST_USER_DEFINED));
+        _userDefined.InsertColumn(0, "Group");
+        _userDefined.InsertColumn(1, "Description");
+
+        UserDefinedGroups userDefinedGroups(_optionsFile.getValue("UserDefinedGroups", ""));
+
+        const unsigned long groupCount = _groups.size();
+        for(unsigned long index = 0; index < groupCount; ++index)
+        {
+            const Group& group = _groups[index];
+
+            int itemIndex = _userDefined.InsertItem(index, group.name.c_str());
+            _userDefined.SetItem(itemIndex, 1, LVIF_TEXT, group.description.c_str(), 0, 0, 0, 0);
+            _userDefined.SetCheckState(itemIndex, userDefinedGroups.contains(group.name) ? TRUE : FALSE);
+        }
+
+        _userDefined.SetColumnWidth(0, -1);
+        _userDefined.SetColumnWidth(1, -1);
+    }
+
+    void storeUserDefinedGroups()
+    {
+        std::string userDefinedString;
+
+        const int itemCount = _userDefined.GetItemCount();
+        for(int index = 0; index < itemCount; ++index)
+        {
+            if(_userDefined.GetCheckState(index) == TRUE)
+            {
+                const int MaxItemText = 100;
+                char itemText[MaxItemText] = { 0 };
+                if(_userDefined.GetItemText(index, 0, itemText, MaxItemText))
+                {
+                    userDefinedString += std::string(itemText) + std::string("|");
+                }
+            }
+        }
+
+        _optionsFile.setValue("UserDefinedGroups", userDefinedString);
+    }
+
     OptionsFile& _optionsFile;
+    Groups&      _groups;
 
     CButton _removeUNCFiles;
     CButton _removeDirectories;
@@ -134,6 +204,8 @@ private:
     CButton _sortAlphabetically;
 
     CButton _showGroupName;
+
+    CCheckListViewCtrl _userDefined;
 };
 
 //-----------------------------------------------------------------------
