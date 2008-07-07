@@ -117,6 +117,7 @@ Version history
   - mruu (User selected groups of applications / My Recent Documents)
 - Much improved filtering and sorting
 - Show icons for UNC files
+- Added FarrMostRecentlyUsed.user config file. Like FarrMostRecentlyUsed.config, but will never be overwritten.
 
 0.2.0
 - Added check for file existence for local files. UNC paths are currently never checked for existence.
