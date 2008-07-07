@@ -51,8 +51,8 @@
 // IMPORTANT: you need to customize there
 //
 #define ThisPlugin_DisplayName			"FARR Most Recently Used Plugin"
-#define ThisPlugin_VersionString		"0.2.0"
-#define ThisPlugin_ReleaseDateString	"July 2, 2008"
+#define ThisPlugin_VersionString		"0.3.0"
+#define ThisPlugin_ReleaseDateString	"July 7, 2008"
 #define ThisPlugin_Author			    "Philipp Tschannen (phitsc)"
 #define ThisPlugin_HomepageURL			"http://farrmru.origo.ethz.ch"
 #define ThisPlugin_UpdateURL			""

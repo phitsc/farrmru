@@ -40,8 +40,32 @@ _sortModeCurrentSearch(Options::Sort_NoSorting)
     _mruOptions.insert(Option_ByMod);
     _mruOptions.insert(Option_ByCreate);
 
-    // 
+    //
     const std::string configFileName = modulePath + "\\FarrMostRecentlyUsed.config";
+
+    // save old .config file
+    const std::string oldConfigFileName = configFileName + ".old";
+    if(CopyFile(configFileName.c_str(), oldConfigFileName.c_str(), TRUE) == FALSE)
+    {
+        // we're probably on Vista and can't write into the Program Files folder, copy to temp instead
+        char tempPath[MAX_PATH];
+        GetTempPath(MAX_PATH, tempPath);
+        PathAppend(tempPath, "FarrMostRecentlyUsed.config.old");
+        CopyFile(configFileName.c_str(), tempPath, TRUE);
+
+        OutputDebugString(tempPath);
+    }
+
+    processConfigFile(configFileName);
+
+    const std::string userConfigFileName = modulePath + "\\FarrMostRecentlyUsed.user";
+    processConfigFile(userConfigFileName);
+}
+
+//-----------------------------------------------------------------------
+
+void FarrMostRecentlyUsedPlugin::processConfigFile(const std::string& configFileName)
+{
     std::ifstream mruSpecificationsFile(configFileName.c_str());
     if(mruSpecificationsFile.is_open())
     {
@@ -84,7 +108,7 @@ _sortModeCurrentSearch(Options::Sort_NoSorting)
                     GroupDescriptionAndRegistryPaths& groupDescriptionAndRegistryPaths = _groupNameToDescriptionAndRegistryPaths[currentGroupName];
                     RegistryPaths& registryPaths = groupDescriptionAndRegistryPaths.second;
 
-                    registryPaths.push_back(line);
+                    registryPaths.insert(line);
                 }
             }
         }
@@ -140,35 +164,8 @@ void FarrMostRecentlyUsedPlugin::search(const char* rawSearchString)
 
         OutputDebugString(searchString.c_str());
 
-        const bool forceSortByName = (options.find(Option_ByName) != options.end());
-        options.erase(Option_ByName);
-
-        const bool forceSortByLastAccessTime = (options.find(Option_ByDate) != options.end());
-        options.erase(Option_ByDate);
-
-        const bool forceSortByLastModifiedTime = (options.find(Option_ByMod) != options.end());
-        options.erase(Option_ByMod);
-
-        const bool forceSortByCreationTime = (options.find(Option_ByCreate) != options.end());
-        options.erase(Option_ByCreate);
-
         _sortModeCurrentSearch = _options.sortMode;
-        if(forceSortByName)
-        {
-            _sortModeCurrentSearch = Options::Sort_Alphabetically;
-        }
-        else if(forceSortByLastAccessTime)
-        {
-            _sortModeCurrentSearch = Options::Sort_TimeLastAccessed;
-        }
-        else if(forceSortByLastModifiedTime)
-        {
-            _sortModeCurrentSearch = Options::Sort_TimeLastModified;
-        }
-        else if(forceSortByCreationTime)
-        {
-            _sortModeCurrentSearch = Options::Sort_TimeCreated;
-        }
+        handleForceSortMode(options);
 
         if(_rebuildItemCache)
         {
@@ -235,12 +232,39 @@ void FarrMostRecentlyUsedPlugin::search(const char* rawSearchString)
 
 //-----------------------------------------------------------------------
 
+void FarrMostRecentlyUsedPlugin::handleForceSortMode(OrderedStringCollection& options)
+{
+    if(options.find(Option_ByName) != options.end())
+    {
+        _sortModeCurrentSearch = Options::Sort_Alphabetically;
+    }
+    else if(options.find(Option_ByDate) != options.end())
+    {
+        _sortModeCurrentSearch = Options::Sort_TimeLastAccessed;
+    }
+    else if(options.find(Option_ByMod) != options.end())
+    {
+        _sortModeCurrentSearch = Options::Sort_TimeLastModified;
+    }
+    else if(options.find(Option_ByCreate) != options.end())
+    {
+        _sortModeCurrentSearch = Options::Sort_TimeCreated;
+    }
+
+    options.erase(Option_ByName);
+    options.erase(Option_ByDate);
+    options.erase(Option_ByMod);
+    options.erase(Option_ByCreate);
+}
+
+//-----------------------------------------------------------------------
+
 void FarrMostRecentlyUsedPlugin::addMenuItems()
 {
     _itemCache.push_back(Item("Alias mrum", "List only 'My Recent Document'|restartsearch mrum", Item::Type_Alias));
     _itemCache.push_back(Item("Alias mrup", "List most recently used items of configured programs|restartsearch mrup", Item::Type_Alias));
     _itemCache.push_back(Item("Alias mrua", "List all most recently used items|restartsearch mrua", Item::Type_Alias));
-    _itemCache.push_back(Item("Alias mruu", "List user defined most recently used items|restartsearch mruu", Item::Type_Alias));
+    //_itemCache.push_back(Item("Alias mruu", "List user defined most recently used items|restartsearch mruu", Item::Type_Alias));
 }
 
 //-----------------------------------------------------------------------

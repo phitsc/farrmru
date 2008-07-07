@@ -162,9 +162,15 @@ bool RemoveItemsStage2::operator()(const Item& item) const
         return true;
     }
 
-    if(!_extensions.empty() & (_extensions.find(PathFindExtension(item.path.c_str())) == _extensions.end()))
+    if(!_extensions.empty())
     {
-        return true;
+        std::string extension = PathFindExtension(item.path.c_str());
+        tolower(extension);
+
+        if(_extensions.find(extension) == _extensions.end())
+        {
+            return true;
+        }
     }
 
     if(!_noSubstringFiltering && !_searchString.empty() && doesntContainSearchstringIgnoringCase(item.path))

@@ -122,6 +122,8 @@ FarrMostRecentlyUsedPlugin* farrMostRecentlyUsedPlugin = 0;
 
 IShellLink* shellLinkRawPtr = 0;
 
+char temporaryDirectory[MAX_PATH] = { 0 };
+
 //-----------------------------------------------------------------------
 
 BOOL MyPlugin_DoInit()
@@ -131,6 +133,8 @@ BOOL MyPlugin_DoInit()
         HRESULT hr = CoCreateInstance(CLSID_ShellLink, NULL, CLSCTX_INPROC_SERVER, IID_IShellLink, (LPVOID*)&shellLinkRawPtr);
         if(SUCCEEDED(hr))
         {
+            GetTempPath(MAX_PATH, temporaryDirectory);
+
             char modulePath[MAX_PATH] = { 0 };
             GetModuleFileName(dllInstanceHandle, modulePath, MAX_PATH);
             PathRemoveFileSpec(modulePath);
@@ -567,18 +571,18 @@ PREFUNCDEF BOOL EFuncName_Request_ItemResultByIndex(int resultindex, char *destb
         strncpy(destbuf_caption, PathFindFileName(item.path.c_str()), maxlen);
         strncpy(destbuf_path, item.path.c_str(), maxlen);
 
-        //if(PathIsUNC(item.path.c_str()))
-        //{
-        //    strncpy(destbuf_iconfilename, getIconPathForUNCFile(item.path).c_str(), maxlen);
-        //}
-        //else if(item.type == Item::Type_URL)
-        //{
-        //    strncpy(destbuf_iconfilename, getIconPathForUNCFile("a.html").c_str(), maxlen);
-        //}
-        //else
-        //{
-        strncpy(destbuf_iconfilename, item.path.c_str(), maxlen);
-        //}
+        if(PathIsUNC(item.path.c_str()))
+        {
+            strncpy(destbuf_iconfilename, getIconPathForUNCFile(item.path).c_str(), maxlen);
+        }
+        else if(item.type == Item::Type_URL)
+        {
+            strncpy(destbuf_iconfilename, getIconPathForUNCFile("a.html").c_str(), maxlen);
+        }
+        else
+        {
+            strncpy(destbuf_iconfilename, item.path.c_str(), maxlen);
+        }
     }
 
     // ok filled one
@@ -724,42 +728,56 @@ BOOL DoFarrSearchBegin(const char* searchstring_raw, const char* /*searchstring_
 
 std::string getIconPathForUNCFile(const std::string& uncPath)
 {
-    std::string pathToIcon;
+    // for now, just create a file with the respective extension in temp and use this
+    char pathToIcon[MAX_PATH] = { 0 };
+    strcpy(pathToIcon, temporaryDirectory);
 
-    RegistryKey extensionKey;
-    if(extensionKey.open(HKEY_CLASSES_ROOT, PathFindExtension(uncPath.c_str()), KEY_READ))
-    {
-        const DWORD MaxApplicationNameLength = 100;
-        char applicationName[MaxApplicationNameLength] = { 0 };
-        DWORD type;
-        DWORD length = MaxApplicationNameLength;
-        if(extensionKey.queryValue(0, &type, (BYTE*)applicationName, &length))
-        {
-            RegistryKey applicationKey;
-            if(applicationKey.open(HKEY_CLASSES_ROOT, applicationName, KEY_READ))
-            {
-                RegistryKey defaultIconKey;
-                if(defaultIconKey.open(applicationKey, "DefaultIcon", KEY_READ))
-                {
-                    char pathToIconBuffer[MAX_PATH];
-                    DWORD type;
-                    DWORD length = MAX_PATH;
-                    if(defaultIconKey.queryValue(0, &type, (BYTE*)pathToIconBuffer, &length))
-                    {
-                        pathToIcon = pathToIconBuffer;
-                        std::string::size_type commaPos = pathToIcon.rfind(',');
-                        if(commaPos != std::string::npos)
-                        {
-                            pathToIcon.erase(commaPos);
+    const std::string tempFileName = std::string("farrmru") + PathFindExtension(uncPath.c_str());
 
-                            OutputDebugString(pathToIcon.c_str());
-                        }
-                    }
-                }
-            }
+    PathAppend(pathToIcon, tempFileName.c_str());
 
-        }
-    }
+    // create the file, if it doesn't exist already
+    HANDLE file = CreateFile(pathToIcon, GENERIC_WRITE, FILE_SHARE_WRITE, 0, CREATE_NEW, FILE_ATTRIBUTE_NORMAL, 0);
+    CloseHandle(file);
+
+    // === for later, once mouser implemented icon paths like this: "DllWithIcon.dll,7"
+
+    //std::string pathToIcon;
+
+    //RegistryKey extensionKey;
+    //if(extensionKey.open(HKEY_CLASSES_ROOT, PathFindExtension(uncPath.c_str()), KEY_READ))
+    //{
+    //    const DWORD MaxApplicationNameLength = 100;
+    //    char applicationName[MaxApplicationNameLength] = { 0 };
+    //    DWORD type;
+    //    DWORD length = MaxApplicationNameLength;
+    //    if(extensionKey.queryValue(0, &type, (BYTE*)applicationName, &length))
+    //    {
+    //        RegistryKey applicationKey;
+    //        if(applicationKey.open(HKEY_CLASSES_ROOT, applicationName, KEY_READ))
+    //        {
+    //            RegistryKey defaultIconKey;
+    //            if(defaultIconKey.open(applicationKey, "DefaultIcon", KEY_READ))
+    //            {
+    //                char pathToIconBuffer[MAX_PATH];
+    //                DWORD type;
+    //                DWORD length = MAX_PATH;
+    //                if(defaultIconKey.queryValue(0, &type, (BYTE*)pathToIconBuffer, &length))
+    //                {
+    //                    pathToIcon = pathToIconBuffer;
+    //                    std::string::size_type commaPos = pathToIcon.rfind(',');
+    //                    if(commaPos != std::string::npos)
+    //                    {
+    //                        pathToIcon.erase(commaPos);
+
+    //                        OutputDebugString(pathToIcon.c_str());
+    //                    }
+    //                }
+    //            }
+    //        }
+
+    //    }
+    //}
 
     return pathToIcon;
 }

@@ -55,7 +55,7 @@ public:
 private:
     typedef std::list<Item> ItemList;
     typedef std::set<std::string> OrderedStringCollection;
-    typedef std::vector<std::string> RegistryPaths;
+    typedef std::set<std::string> RegistryPaths;
     typedef std::pair<std::string, RegistryPaths> GroupDescriptionAndRegistryPaths;
     typedef std::map<std::string, GroupDescriptionAndRegistryPaths> GroupNameToDescriptionAndRegistryPaths;
 
@@ -80,12 +80,16 @@ private:
     void sortItems(ItemList& itemList);
     static void sortItemsAlphabetically(ItemList& itemList);
     static void sortItemsByFileTime(ItemList& itemList, int fileTimeType);
-    
 
+    // initialisation
+    void processConfigFile(const std::string& configFileName);
+
+    //
     void extractSearchOptions(std::string& searchString, 
                               OrderedStringCollection& options,
                               OrderedStringCollection& groups,
                               OrderedStringCollection& extensions) const;
+    void handleForceSortMode(OrderedStringCollection& options);
 
     // debugging functions
     static void debugOutputResultList(const ItemList& itemList);
