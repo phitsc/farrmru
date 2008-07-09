@@ -66,11 +66,13 @@ private:
     void addUserDefinedGroups();
 
     static bool hasMRUList(const RegistryKey& registryKey);
+    static bool usesSubkeys(const std::string& restKeyPath);
     void addGroup(const GroupNameToDescriptionAndRegistryPaths::const_iterator& typeIterator, ItemList& itemList) const;
     void addMRUs(const std::string& groupName, const std::string& keyPath, ItemList& itemList) const;
     static void addMRUsFromRegistry(const std::string& groupName, HKEY baseKey, const std::string& restKeyPath, ItemList& itemList);
     static void addWithMRUList(const std::string& groupName, const RegistryKey& registryKey, ItemList& itemList);
     static void addWithItemNo(const std::string& groupName, const RegistryKey& registryKey, ItemList& itemList);
+    static void addWithSubkey(const std::string& groupName, const RegistryKey& registryKey, const std::string& valueName, ItemList& itemList);
     void addMRUsFromFile(const std::string& groupName, const std::string& applicationKey, ItemList& itemList) const;
 
     void addMRUs_OpenOffice(const std::string& groupName, ItemList& itemList) const;
@@ -78,7 +80,7 @@ private:
 
     void resolveLinks(ItemList& itemList);
     void resolveLink(Item& item);
-    void updateFileTimes(ItemList& itemList);
+    void updateFileTimes(ItemList& itemList) const;
     static void updateFileTime(Item& item);
     static bool isFileTimeNull(const FILETIME& fileTime);
 
@@ -102,6 +104,21 @@ private:
     OrderedStringCollection _mruOptions;
 
     static void removeInvalidStuff(std::string& path);
+    static void fixAdobePath(std::string& path);
+    class IsSameCharacter
+    {
+    public:
+        IsSameCharacter(char character) : _character(character)
+        {}
+
+        bool operator()(char character) const
+        {
+            return (character == _character);
+        }
+
+    private:
+        char _character;
+    };
 
     // cache all available items (before sorting and filtering)
     ItemList    _itemCache;

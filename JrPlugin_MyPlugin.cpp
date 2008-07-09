@@ -555,13 +555,28 @@ PREFUNCDEF BOOL EFuncName_Request_ItemResultByIndex(int resultindex, char *destb
 
     if(item.type == E_EntryType_ALIAS)
     {
-        strncpy(destbuf_groupname, item.groupName.c_str(), maxlen);
+        // caption and path
+        {
+            const std::string& pathName = item.path;
+            const std::string::size_type pipePos = pathName.find('|');
 
-        const std::string& pathName = item.path;
-        const std::string::size_type pipePos = pathName.find('|');
+            strncpy(destbuf_caption, pathName.substr(0, pipePos).c_str(), maxlen);
+            strncpy(destbuf_path, pathName.substr(pipePos + 1).c_str(), maxlen);
+        }
 
-        strncpy(destbuf_caption, pathName.substr(0, pipePos).c_str(), maxlen);
-        strncpy(destbuf_path, pathName.substr(pipePos + 1).c_str(), maxlen);
+        // group and icon
+        {
+            const std::string& groupName = item.groupName;
+            const std::string::size_type pipePos = groupName.find('|');
+
+            strncpy(destbuf_groupname, groupName.substr(0, pipePos).c_str(), maxlen);
+
+            char iconFilePath[MAX_PATH] = { 0 };
+            strcpy(iconFilePath, iconfpath);
+            PathAppend(iconFilePath, groupName.substr(pipePos + 1).c_str());
+
+            strncpy(destbuf_iconfilename, iconFilePath, maxlen);
+        }
     }
     else
     {

@@ -51,8 +51,8 @@
 // IMPORTANT: you need to customize there
 //
 #define ThisPlugin_DisplayName			"FARR Most Recently Used Plugin"
-#define ThisPlugin_VersionString		"0.3.1"
-#define ThisPlugin_ReleaseDateString	"July 8, 2008"
+#define ThisPlugin_VersionString		"0.4.0"
+#define ThisPlugin_ReleaseDateString	"July 9, 2008"
 #define ThisPlugin_Author			    "Philipp Tschannen (phitsc)"
 #define ThisPlugin_HomepageURL			"http://farrmru.origo.ethz.ch"
 #define ThisPlugin_UpdateURL			""
@@ -68,7 +68,7 @@
 #define ThisPlugin_ReadMeFile			"readme.txt"
 //
 // If this plugin has an icon (recommended), specify icon file in same dir as dll - shown in plugin list
-#define ThisPlugin_IconFilename			"mostrecentlyused.ico"
+#define ThisPlugin_IconFilename			"FarrMRU.ico"
 //
 //-----------------------------------------------------------------------
 

@@ -284,6 +284,10 @@ void FarrMostRecentlyUsedPlugin::search(const char* rawSearchString)
 
         _itemVector.assign(itemList.begin(), itemList.end());
     }
+    else
+    {
+        _itemVector.clear();
+    }
 }
 
 //-----------------------------------------------------------------------
@@ -317,17 +321,17 @@ void FarrMostRecentlyUsedPlugin::handleForceSortMode(OrderedStringCollection& op
 
 void FarrMostRecentlyUsedPlugin::addMenuItems()
 {
-    _itemCache.push_back(Item("Alias mrum", "List only 'My Recent Document'|restartsearch mrum", Item::Type_Alias));
-    _itemCache.push_back(Item("Alias mrup", "List most recently used items of configured programs|restartsearch mrup", Item::Type_Alias));
-    _itemCache.push_back(Item("Alias mrua", "List all most recently used items|restartsearch mrua", Item::Type_Alias));
-    _itemCache.push_back(Item("Alias mruu", "List user defined most recently used items|restartsearch mruu", Item::Type_Alias));
+    _itemCache.push_back(Item("Alias mrum|FarrMRU_MyRecentDocuments.ico", "List only 'My Recent Documents'|restartsearch mrum", Item::Type_Alias));
+    _itemCache.push_back(Item("Alias mrup|FarrMRU_ConfiguredApps.ico", "List most recently used items of configured programs|restartsearch mrup", Item::Type_Alias));
+    _itemCache.push_back(Item("Alias mrua|FarrMRU_All.ico", "List all most recently used items|restartsearch mrua", Item::Type_Alias));
+    _itemCache.push_back(Item("Alias mruu|FarrMRU_UserDefined.ico", "List user defined most recently used items|restartsearch mruu", Item::Type_Alias));
 }
 
 //-----------------------------------------------------------------------
 
 void FarrMostRecentlyUsedPlugin::addMyRecentDocuments()
 {
-    if(_recentFolder.empty())
+    if(!_recentFolder.empty())
     {
         debugOutputMessage(Debug_Level1, _recentFolder.c_str());
 
@@ -435,16 +439,33 @@ void FarrMostRecentlyUsedPlugin::addMRUs(const std::string& groupName, const std
 
 void FarrMostRecentlyUsedPlugin::addMRUsFromRegistry(const std::string& groupName, HKEY baseKey, const std::string& restKeyPath, ItemList& itemList)
 {
-    RegistryKey key;
-    if(key.open(baseKey, restKeyPath.c_str(), KEY_READ))
+    if(usesSubkeys(restKeyPath))
     {
-        if(hasMRUList(key))
+        std::string::size_type pipePos = restKeyPath.rfind('|');
+
+        const std::string subKey = restKeyPath.substr(0, pipePos);
+
+        RegistryKey key;
+        if(key.open(baseKey, subKey.c_str(), KEY_READ))
         {
-            addWithMRUList(groupName, key, itemList);
+            const std::string valueName = restKeyPath.substr(pipePos + 1);
+
+            addWithSubkey(groupName, key, valueName, itemList);
         }
-        else
+    }
+    else
+    {
+        RegistryKey key;
+        if(key.open(baseKey, restKeyPath.c_str(), KEY_READ))
         {
-            addWithItemNo(groupName, key, itemList);
+            if(hasMRUList(key))
+            {
+                addWithMRUList(groupName, key, itemList);
+            }
+            else
+            {
+                addWithItemNo(groupName, key, itemList);
+            }
         }
     }
 }
@@ -458,6 +479,15 @@ bool FarrMostRecentlyUsedPlugin::hasMRUList(const RegistryKey& registryKey)
     DWORD type;
     DWORD length = MaxMRUListLength;
     return registryKey.queryValue("MRUList", &type, (BYTE*)mruList, &length);
+}
+
+//-----------------------------------------------------------------------
+
+bool FarrMostRecentlyUsedPlugin::usesSubkeys(const std::string& restKeyPath)
+{
+    std::string::size_type pipePos = restKeyPath.rfind('|');
+
+    return (pipePos != std::string::npos);
 }
 
 //-----------------------------------------------------------------------
@@ -523,6 +553,60 @@ void FarrMostRecentlyUsedPlugin::addWithItemNo(const std::string& groupName, con
         ++index;
         length = MaxValueNameLength;
         valueLength = MaxMRUValueLength;
+    }
+
+    OrderedItems::const_iterator it = orderedItems.begin();
+    OrderedItems::const_iterator end = orderedItems.end();
+    for( ; it != end; ++it)
+    {
+        const std::string& item = it->second;
+        
+        itemList.push_back(Item(groupName, item, PathIsURL(item.c_str()) ? Item::Type_URL : Item::Type_File));
+    }
+}
+
+//-----------------------------------------------------------------------
+
+void FarrMostRecentlyUsedPlugin::addWithSubkey(const std::string& groupName, const RegistryKey& registryKey, const std::string& valueName, ItemList& itemList)
+{
+    const DWORD MaxKeyNameLength = 100;
+    char keyName[MaxKeyNameLength] = { 0 };
+    DWORD keyNameLength = MaxKeyNameLength;
+
+    typedef std::map<unsigned long, std::string> OrderedItems;
+    OrderedItems orderedItems;
+
+    FILETIME lastWriteTime = { 0 };
+
+    DWORD index = 0;
+    while(registryKey.enumKey(index, keyName, &keyNameLength, &lastWriteTime))
+    {
+        RegistryKey subKey;
+        if(subKey.open(registryKey, keyName, KEY_READ))
+        {
+            std::string keyNameString(keyName);
+            std::string::size_type startOfNumber = keyNameString.find_first_of("0123456789");
+
+            std::stringstream stream(keyNameString.substr(startOfNumber));
+            unsigned long itemNumber;
+            stream >> itemNumber;
+
+            DWORD type;
+            const DWORD MaxMRUValueLength = MAX_PATH;
+            char mruValueBuffer[MaxMRUValueLength] = { 0 };
+            DWORD length = MaxMRUValueLength;
+            if(subKey.queryValue(valueName.c_str(), &type, (BYTE*)mruValueBuffer, &length))
+            {
+                std::string item(mruValueBuffer);
+
+                fixAdobePath(item);
+
+                orderedItems.insert(OrderedItems::value_type(itemNumber, item));
+            }
+        }
+
+        ++index;
+        keyNameLength = MaxKeyNameLength;
     }
 
     OrderedItems::const_iterator it = orderedItems.begin();
@@ -648,6 +732,8 @@ void FarrMostRecentlyUsedPlugin::addMRUs_NotepadPlusPlus(const std::string& grou
         TiXmlDocument document;
         if(document.LoadFile(recentFile))
         {
+            ItemList temporaryList;
+
             const TiXmlElement* rootElement = document.RootElement();
 
             const TiXmlElement* element;
@@ -664,13 +750,18 @@ void FarrMostRecentlyUsedPlugin::addMRUs_NotepadPlusPlus(const std::string& grou
                         const char* filename = fileElement->Attribute("filename");
                         if(filename != 0)
                         {
-                            itemList.push_back(Item(groupName, filename, PathIsURL(filename) ? Item::Type_URL : Item::Type_File));
+                            temporaryList.push_back(Item(groupName, filename, PathIsURL(filename) ? Item::Type_URL : Item::Type_File));
                         }
                     }
 
                     break;
                 }
             }
+
+            updateFileTimes(temporaryList);
+            sortItemsByFileTime(temporaryList, CompareFiletime::LastAccessed);
+
+            itemList.insert(itemList.end(), temporaryList.begin(), temporaryList.end());
         }
     }
 }
@@ -683,6 +774,34 @@ void FarrMostRecentlyUsedPlugin::removeInvalidStuff(std::string& path)
     if(pos != std::string::npos)
     {
         path.erase(0, pos + 1);
+    }
+}
+
+//-----------------------------------------------------------------------
+
+void FarrMostRecentlyUsedPlugin::fixAdobePath(std::string& path)
+{
+    if(!path.empty())
+    {
+        std::replace_if(path.begin(), path.end(), IsSameCharacter('/'), '\\');
+
+        if(path[0] == '\\')
+        {
+            // is it something like \C\file.txt
+            if((path.length() > 4) && (path[2] == '\\'))
+            {
+                // remove leading backslash
+                path.erase(0, 1);
+
+                // then insert :
+                path.insert(1, ":");
+            }
+            else
+            {
+                // assume UNC, insert another backslash
+                path.insert(0, '\\');
+            }
+        }
     }
 }
 
@@ -855,7 +974,7 @@ void FarrMostRecentlyUsedPlugin::resolveLink(Item& item)
 
 //-----------------------------------------------------------------------
 
-void FarrMostRecentlyUsedPlugin::updateFileTimes(ItemList& itemList)
+void FarrMostRecentlyUsedPlugin::updateFileTimes(ItemList& itemList) const
 {
     ItemList::iterator it = itemList.begin();
     ItemList::iterator end = itemList.end();
