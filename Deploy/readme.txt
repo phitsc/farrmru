@@ -1,6 +1,6 @@
 ===============================================================================
 
-FARR MostRecentlyUsed plugin - 0.3.0 - 7. July 2008
+FARR MostRecentlyUsed plugin - 0.4.0 - 9. July 2008
 
 (c) 2008 Philipp Tschannen
 
