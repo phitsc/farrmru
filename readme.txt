@@ -33,12 +33,15 @@ Use the following modifier keywords to change the search:
 +.[ext]   : Filter results by file extension [ext]. More than one can be used, e.g. +.h +.cpp
 
 To show a list of most recently used files for selected applications, use the following modifiers:
++acrobat : Adobe Acrobat Reader 9
 +foxit   : Foxit Reader
 +km      : KMPlayer
 +msvc8   : MS Visual Studio 2005
 +msvc9   : MS Visual Studio 2008
++npp     : Notepad++
 +office3 : Microsoft Office 2003
 +office7 : Microsoft Office 2007
++oo      : OpenOffice 2.0
 +paint   : Paint
 +photoe  : Photoshop Elements
 +snag    : SnagIt
@@ -98,7 +101,9 @@ Clearing the 'Recent Items' list on Windows Vista will not make these files disa
 
 Credits
 =====================
-The icon is from FamFamFam's silk icon set: http://www.famfamfam.com/lab/icons/silk/
+Using the TinyXml parser ( www.sourceforge.net/projects/tinyxml )
+
+Special thanks to hamradio for the wonderful icons!
 
 
 Disclaimer
@@ -108,6 +113,13 @@ This plugin is provided 'as is'. No warranty of any kind is expressed or implied
 
 Version history
 =====================
+0.4.0
+- Added icons to the simple menu (thanks hamradio!)
+- Added support for the following applications:
+  - Adobe Acrobat Reader 9 (+acrobat)
+  - Notepad++ (+npp)
+  - OpenOffice 2.0 (+oo)
+
 0.3.0
 - Added simple menu (type mru)
 - Added special aliases:
