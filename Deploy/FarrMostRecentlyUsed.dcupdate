@@ -2,7 +2,7 @@
 <Local>
     <!-- basic info to display in updater-->
     <Label>FarrMostRecentlyUsed (FARR2 Plugin)</Label>
-    <IconFile>mostrecentlyused.ico</IconFile>
+    <IconFile>FarrMRU.ico</IconFile>
     
     <!-- version info of locally installed current version, and simple remote version file -->
     <Version>0.4.0</Version>
