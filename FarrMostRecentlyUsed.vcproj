@@ -113,6 +113,8 @@
 			/>
 			<Tool
 				Name="VCCustomBuildTool"
+				CommandLine="copy $(OutDir)\$(ProjectName).dll $(ProjectDir)\Deploy\$(ProjectName).dll"
+				Outputs="$(ProjectName).dll"
 			/>
 			<Tool
 				Name="VCXMLDataGeneratorTool"
