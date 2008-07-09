@@ -66,10 +66,15 @@ private:
     void addUserDefinedGroups();
 
     static bool hasMRUList(const RegistryKey& registryKey);
-    static void addMRUs(const std::string& groupName, const std::string& keyPath, ItemList& itemList);
+    void addGroup(const GroupNameToDescriptionAndRegistryPaths::const_iterator& typeIterator, ItemList& itemList) const;
+    void addMRUs(const std::string& groupName, const std::string& keyPath, ItemList& itemList) const;
+    static void addMRUsFromRegistry(const std::string& groupName, HKEY baseKey, const std::string& restKeyPath, ItemList& itemList);
     static void addWithMRUList(const std::string& groupName, const RegistryKey& registryKey, ItemList& itemList);
     static void addWithItemNo(const std::string& groupName, const RegistryKey& registryKey, ItemList& itemList);
-    static void addType(const GroupNameToDescriptionAndRegistryPaths::const_iterator& typeIterator, ItemList& itemList);
+    void addMRUsFromFile(const std::string& groupName, const std::string& applicationKey, ItemList& itemList) const;
+
+    void addMRUs_OpenOffice(const std::string& groupName, ItemList& itemList) const;
+    void addMRUs_NotepadPlusPlus(const std::string& groupName, ItemList& itemList) const;
 
     void resolveLinks(ItemList& itemList);
     void resolveLink(Item& item);
@@ -91,10 +96,6 @@ private:
                               OrderedStringCollection& groups,
                               OrderedStringCollection& extensions) const;
     void handleForceSortMode(OrderedStringCollection& options);
-
-    // debugging functions
-    static void debugOutputResultList(const ItemList& itemList);
-    static void debugOutputNumber(const char* comment, long number);
 
     //
     OrderedStringCollection _farrOptions;
@@ -128,8 +129,26 @@ private:
 
     GroupNameToDescriptionAndRegistryPaths _groupNameToDescriptionAndRegistryPaths;
 
-    CComPtr<IShellLink> _shellLink;
+    CComPtr<IShellLink>   _shellLink;
     CComPtr<IPersistFile> _shellLinkFile;
+
+    std::string _recentFolder;
+    std::string _appDataFolder;
+
+    // debugging functions
+    enum DebugLevel
+    {
+        Debug_Level0,
+        Debug_Level1,
+        Debug_Level2,
+    };
+    DebugLevel _debugLevel;
+
+    void setDebugLevel(const OrderedStringCollection& options);
+
+    void debugOutputMessage(DebugLevel debugLevel, const char* message) const;
+    void debugOutputNumber(DebugLevel debugLevel, const char* message, long number) const;
+    void debugOutputResultList(DebugLevel debugLevel, const ItemList& itemList) const;
 };
 
 //-----------------------------------------------------------------------

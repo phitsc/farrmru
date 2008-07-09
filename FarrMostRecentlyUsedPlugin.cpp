@@ -12,12 +12,18 @@
 #include <fstream>
 #include <map>
 
+#include "tinyxml/tinyxml.h"
+
 //-----------------------------------------------------------------------
 
 const char* Option_ByName   = "byname";
 const char* Option_ByDate   = "bydate";
 const char* Option_ByMod    = "bymod";
 const char* Option_ByCreate = "bycreate";
+
+const char* Option_DebugLevel0 = "debug0!";
+const char* Option_DebugLevel1 = "debug1!";
+const char* Option_DebugLevel2 = "debug2!";
 
 const char* MyRecentDocuments_GroupName = "recent";
 
@@ -29,9 +35,22 @@ _currentMruMode(Mode_None),
 _optionsFile(modulePath + "\\FarrMostRecentlyUsed.ini"),
 _options(_optionsFile),
 _shellLink(shellLinkRawPtr),
-_sortModeCurrentSearch(Options::Sort_NoSorting)
+_sortModeCurrentSearch(Options::Sort_NoSorting),
+_debugLevel(Debug_Level0)
 {
     _shellLink.QueryInterface(&_shellLinkFile);
+
+    char recentFolder[MAX_PATH] = { 0 };
+    if(S_OK == SHGetFolderPath(0, CSIDL_RECENT, 0, SHGFP_TYPE_CURRENT, recentFolder))
+    {
+        _recentFolder = recentFolder;
+    }
+
+    char appDataFolder[MAX_PATH] = { 0 };
+    if(S_OK == SHGetFolderPath(0, CSIDL_APPDATA, 0, SHGFP_TYPE_CURRENT, appDataFolder))
+    {
+        _appDataFolder = appDataFolder;
+    }
 
     // ignore these, they are used by farr
     _farrOptions.insert("sall");
@@ -41,6 +60,10 @@ _sortModeCurrentSearch(Options::Sort_NoSorting)
     _mruOptions.insert(Option_ByDate);
     _mruOptions.insert(Option_ByMod);
     _mruOptions.insert(Option_ByCreate);
+    
+    _mruOptions.insert(Option_DebugLevel0);
+    _mruOptions.insert(Option_DebugLevel1);
+    _mruOptions.insert(Option_DebugLevel2);
 
     //
     const std::string configFileName = modulePath + "\\FarrMostRecentlyUsed.config";
@@ -177,7 +200,7 @@ void FarrMostRecentlyUsedPlugin::search(const char* rawSearchString)
         OrderedStringCollection extensions;
         extractSearchOptions(searchString, options, groups, extensions);
 
-        OutputDebugString(searchString.c_str());
+        setDebugLevel(options);
 
         _sortModeCurrentSearch = _options.sortMode;
         handleForceSortMode(options);
@@ -185,6 +208,8 @@ void FarrMostRecentlyUsedPlugin::search(const char* rawSearchString)
         if(_rebuildItemCache)
         {
             _itemCache.clear();
+
+            debugOutputNumber(Debug_Level1, "Mode", mruMode);
 
             switch(mruMode)
             {
@@ -213,10 +238,16 @@ void FarrMostRecentlyUsedPlugin::search(const char* rawSearchString)
                 break;
             }
 
+            debugOutputNumber(Debug_Level1, "Updated item cache. Item count", _itemCache.size());
+            debugOutputResultList(Debug_Level2, _itemCache);
+
             if(mruMode != Mode_Menu)
             {
                 RemoveItemsStage1 removeItemsStage1(_options);
                 _itemCache.remove_if(removeItemsStage1);
+
+                debugOutputNumber(Debug_Level1, "After filter stage 1. Item count", _itemCache.size());
+                debugOutputResultList(Debug_Level2, _itemCache);
 
                 updateFileTimes(_itemCache);
             }
@@ -232,14 +263,23 @@ void FarrMostRecentlyUsedPlugin::search(const char* rawSearchString)
             RemoveItemsStage2 removeItemsStage2(extensions, groups, searchString, noSubstringFiltering);
             itemList.remove_if(removeItemsStage2);
 
+            debugOutputNumber(Debug_Level1, "After filter stage 2. Item count", itemList.size());
+            debugOutputResultList(Debug_Level2, itemList);
+
             const bool noSorting = ((mruMode == Mode_Programs) && (groups.size() == 1)) || (_sortModeCurrentSearch == Options::Sort_NoSorting);
             if(!noSorting)
             {
                 sortItems(itemList);
+
+                debugOutputNumber(Debug_Level1, "After sorting. Item count", itemList.size());
+                debugOutputResultList(Debug_Level2, itemList);
             }
 
             RemoveDuplicates removeDuplicates;
             itemList.remove_if(removeDuplicates);
+
+            debugOutputNumber(Debug_Level1, "After filter stage 3. Item count", itemList.size());
+            debugOutputResultList(Debug_Level2, itemList);
         }
 
         _itemVector.assign(itemList.begin(), itemList.end());
@@ -287,10 +327,11 @@ void FarrMostRecentlyUsedPlugin::addMenuItems()
 
 void FarrMostRecentlyUsedPlugin::addMyRecentDocuments()
 {
-    char recentFolder[MAX_PATH] = { 0 };
-    if(S_OK == SHGetFolderPath(0, CSIDL_RECENT, 0, SHGFP_TYPE_CURRENT, recentFolder))
+    if(_recentFolder.empty())
     {
-        const FileList fileList(recentFolder, "*.*", FileList::Files);
+        debugOutputMessage(Debug_Level1, _recentFolder.c_str());
+
+        const FileList fileList(_recentFolder, "*.*", FileList::Files);
 
         FileList::const_iterator it = fileList.begin();
         const FileList::const_iterator end = fileList.end();
@@ -319,7 +360,7 @@ void FarrMostRecentlyUsedPlugin::addMruApplications()
 
     for( ; groupNameIterator != groupNamesEnd; ++groupNameIterator)
     {
-        addType(groupNameIterator, _itemCache);
+        addGroup(groupNameIterator, _itemCache);
     }
 }
 
@@ -340,14 +381,14 @@ void FarrMostRecentlyUsedPlugin::addUserDefinedGroups()
         const std::string& groupName = groupNameIterator->first;
         if(_options.userDefinedGroups.contains(groupName))
         {
-            addType(groupNameIterator, _itemCache);
+            addGroup(groupNameIterator, _itemCache);
         }
     }
 }
 
 //-----------------------------------------------------------------------
 
-void FarrMostRecentlyUsedPlugin::addType(const GroupNameToDescriptionAndRegistryPaths::const_iterator& typeIterator, ItemList& itemList)
+void FarrMostRecentlyUsedPlugin::addGroup(const GroupNameToDescriptionAndRegistryPaths::const_iterator& typeIterator, ItemList& itemList) const
 {
     const std::string& groupName = typeIterator->first;
     const GroupDescriptionAndRegistryPaths& groupDescriptionAndRegistryPaths = typeIterator->second;
@@ -365,42 +406,45 @@ void FarrMostRecentlyUsedPlugin::addType(const GroupNameToDescriptionAndRegistry
 
 //-----------------------------------------------------------------------
 
-void FarrMostRecentlyUsedPlugin::addMRUs(const std::string& groupName, const std::string& keyPath, ItemList& itemList)
+void FarrMostRecentlyUsedPlugin::addMRUs(const std::string& groupName, const std::string& keyPath, ItemList& itemList) const
 {
     std::string::size_type backslashPos = keyPath.find('\\');
     if(backslashPos != std::string::npos)
     {
-        std::string baseKeyName = keyPath.substr(0, backslashPos);
-        std::string restKey = keyPath.substr(backslashPos + 1);
+        const std::string baseKeyName = keyPath.substr(0, backslashPos);
+        const std::string restKey = keyPath.substr(backslashPos + 1);
 
-        HKEY baseKey = 0;
         if(baseKeyName == "HKEY_CURRENT_USER")
         {
-            baseKey = HKEY_CURRENT_USER;
+            addMRUsFromRegistry(groupName, HKEY_CURRENT_USER, restKey, itemList);
         }
         else if(baseKeyName == "HKEY_LOCAL_MACHINE")
         {
-            baseKey = HKEY_LOCAL_MACHINE;
+            addMRUsFromRegistry(groupName, HKEY_LOCAL_MACHINE, restKey, itemList);
         }
         else if(baseKeyName == "HKEY_USERS")
         {
-            baseKey = HKEY_USERS;
+            addMRUsFromRegistry(groupName, HKEY_USERS, restKey, itemList);
         }
-
-        if(baseKey != 0)
+        else if(baseKeyName == "FARR_MRU")
         {
-            RegistryKey key;
-            if(key.open(baseKey, restKey.c_str(), KEY_READ))
-            {
-                if(hasMRUList(key))
-                {
-                    addWithMRUList(groupName, key, itemList);
-                }
-                else
-                {
-                    addWithItemNo(groupName, key, itemList);
-                }
-            }
+            addMRUsFromFile(groupName, restKey, itemList);
+        }
+    }
+}
+
+void FarrMostRecentlyUsedPlugin::addMRUsFromRegistry(const std::string& groupName, HKEY baseKey, const std::string& restKeyPath, ItemList& itemList)
+{
+    RegistryKey key;
+    if(key.open(baseKey, restKeyPath.c_str(), KEY_READ))
+    {
+        if(hasMRUList(key))
+        {
+            addWithMRUList(groupName, key, itemList);
+        }
+        else
+        {
+            addWithItemNo(groupName, key, itemList);
         }
     }
 }
@@ -438,9 +482,7 @@ void FarrMostRecentlyUsedPlugin::addWithMRUList(const std::string& groupName, co
             {
                 std::string mruValue(mruValueBuffer);
 
-                FILETIME null = { 0 };
-
-                itemList.push_back(Item(groupName, mruValue, PathIsURL(mruValue.c_str()) ? Item::Type_URL : Item::Type_File, null));
+                itemList.push_back(Item(groupName, mruValue, PathIsURL(mruValue.c_str()) ? Item::Type_URL : Item::Type_File));
             }
         }
     }
@@ -489,9 +531,147 @@ void FarrMostRecentlyUsedPlugin::addWithItemNo(const std::string& groupName, con
     {
         const std::string& item = it->second;
         
-        FILETIME null = { 0 };
+        itemList.push_back(Item(groupName, item, PathIsURL(item.c_str()) ? Item::Type_URL : Item::Type_File));
+    }
+}
 
-        itemList.push_back(Item(groupName, item, PathIsURL(item.c_str()) ? Item::Type_URL : Item::Type_File, null));
+//-----------------------------------------------------------------------
+
+void FarrMostRecentlyUsedPlugin::addMRUsFromFile(const std::string& groupName, const std::string& applicationKey, ItemList& itemList) const
+{
+    if(applicationKey == "openoffice")
+    {
+        addMRUs_OpenOffice(groupName, itemList);
+    }
+    else if(applicationKey == "npp")
+    {
+        addMRUs_NotepadPlusPlus(groupName, itemList);
+    }
+}
+
+//-----------------------------------------------------------------------
+
+const char* OpenOffice_RecentFile = "\\OpenOffice.org2\\user\\registry\\data\\org\\openoffice\\Office\\Common.xcu";
+
+const char* OpenOffice_History = "History";
+const char* OpenOffice_List = "List";
+const char* OpenOffice_URL = "URL";
+
+void FarrMostRecentlyUsedPlugin::addMRUs_OpenOffice(const std::string& groupName, ItemList& itemList) const
+{
+    if(!_appDataFolder.empty())
+    {
+        char recentFile[MAX_PATH] = { 0 };
+        strcpy(recentFile, _appDataFolder.c_str());
+        PathAppend(recentFile, OpenOffice_RecentFile);
+
+        TiXmlDocument document;
+        if(document.LoadFile(recentFile))
+        {
+            const TiXmlElement* rootElement = document.RootElement();
+
+            const TiXmlElement* historyElement;
+            for(historyElement = rootElement->FirstChildElement(); historyElement != 0; historyElement = historyElement->NextSiblingElement())
+            {
+                // find History element
+                const char* attributeValue = historyElement->Attribute("oor:name");
+                if((attributeValue != 0) && (strcmp(attributeValue, OpenOffice_History) == 0))
+                {
+                    // find List element
+                    const TiXmlElement* listElement;
+                    for(listElement = historyElement->FirstChildElement(); listElement != 0; listElement = listElement->NextSiblingElement())
+                    {
+                        const char* attributeValue = listElement->Attribute("oor:name");
+                        if((attributeValue != 0) && (strcmp(attributeValue, OpenOffice_List) == 0))
+                        {
+                            // iterate over recent items
+                            const TiXmlElement* recentItemElement;
+                            for(recentItemElement = listElement->FirstChildElement(); recentItemElement != 0; recentItemElement = recentItemElement->NextSiblingElement())
+                            {
+                                // and get URL (file)
+                                const TiXmlElement* urlElement;
+                                for(urlElement = recentItemElement->FirstChildElement(); urlElement != 0; urlElement = urlElement->NextSiblingElement())
+                                {
+                                    const char* attributeValue = urlElement->Attribute("oor:name");
+                                    if((attributeValue != 0) && (strcmp(attributeValue, OpenOffice_URL) == 0))
+                                    {
+                                        const TiXmlElement* valueElement = urlElement->FirstChildElement();
+
+                                        const char* value = valueElement->GetText();
+                                        if(value != 0)
+                                        {
+                                            if(UrlIsFileUrl(value) == TRUE)
+                                            {
+                                                char mruValue[MAX_PATH] = { 0 };
+                                                DWORD length = MAX_PATH;
+                                                if(SUCCEEDED(PathCreateFromUrl(value, mruValue, &length, 0)))
+                                                {
+                                                    itemList.push_back(Item(groupName, mruValue, Item::Type_File));
+                                                }
+                                            }
+                                            else
+                                            {
+                                                itemList.push_back(Item(groupName, value, PathIsURL(value) ? Item::Type_URL : Item::Type_File));
+                                            }
+                                        }
+
+                                        break;
+                                    }
+                                }
+                            }
+
+                            break;
+                        }
+                    }
+
+                    break;
+                }
+            }
+        }
+    }
+}
+
+//-----------------------------------------------------------------------
+
+const char* Npp_RecentFile = "\\Notepad++\\config.xml";
+
+const char* Npp_History = "History";
+
+void FarrMostRecentlyUsedPlugin::addMRUs_NotepadPlusPlus(const std::string& groupName, ItemList& itemList) const
+{
+    if(!_appDataFolder.empty())
+    {
+        char recentFile[MAX_PATH] = { 0 };
+        strcpy(recentFile, _appDataFolder.c_str());
+        PathAppend(recentFile, Npp_RecentFile);
+
+        TiXmlDocument document;
+        if(document.LoadFile(recentFile))
+        {
+            const TiXmlElement* rootElement = document.RootElement();
+
+            const TiXmlElement* element;
+            for(element = rootElement->FirstChildElement(); element != 0; element = element->NextSiblingElement())
+            {
+                // find History element
+                const char* nodeName = element->Value();
+                if((nodeName != 0) && (strcmp(nodeName, Npp_History) == 0))
+                {
+                    // iterator over recent files
+                    const TiXmlElement* fileElement;
+                    for(fileElement = element->FirstChildElement(); fileElement != 0; fileElement = fileElement->NextSiblingElement())
+                    {
+                        const char* filename = fileElement->Attribute("filename");
+                        if(filename != 0)
+                        {
+                            itemList.push_back(Item(groupName, filename, PathIsURL(filename) ? Item::Type_URL : Item::Type_File));
+                        }
+                    }
+
+                    break;
+                }
+            }
+        }
     }
 }
 
@@ -732,30 +912,79 @@ bool FarrMostRecentlyUsedPlugin::isFileTimeNull(const FILETIME& fileTime)
 
 //-----------------------------------------------------------------------
 
-void FarrMostRecentlyUsedPlugin::debugOutputResultList(const ItemList& itemList)
+void FarrMostRecentlyUsedPlugin::setDebugLevel(const OrderedStringCollection& options)
 {
-    OutputDebugString("==== Result list ====");
+    DebugLevel oldDebugLevel = _debugLevel;
 
-    ItemList::const_iterator it = itemList.begin();
-    const ItemList::const_iterator end = itemList.end();
-
-    for( ; it != end; ++it)
+    if(options.find(Option_DebugLevel0) != options.end())
     {
-        const Item& item = *it;
+        _debugLevel = Debug_Level0;
+    }
+    else if(options.find(Option_DebugLevel1) != options.end())
+    {
+        _debugLevel = Debug_Level1;
+    }
+    else if(options.find(Option_DebugLevel2) != options.end())
+    {
+        _debugLevel = Debug_Level2;
+    }
 
+    if(_debugLevel != oldDebugLevel)
+    {
         std::stringstream stream;
-        stream << item.path << " - " << item.lastAccessTime.dwHighDateTime << " " << item.lastAccessTime.dwLowDateTime << "\n";
+        stream << "FARR MRU: Debug Level " << _debugLevel << "\n";
         OutputDebugString(stream.str().c_str());
     }
 }
 
 //-----------------------------------------------------------------------
 
-void FarrMostRecentlyUsedPlugin::debugOutputNumber(const char* comment, long number)
+void FarrMostRecentlyUsedPlugin::debugOutputMessage(DebugLevel debugLevel, const char* message) const
 {
-    std::stringstream stream;
-    stream << comment << ": " << number << "\n";
-    OutputDebugString(stream.str().c_str());
+    if(_debugLevel >= debugLevel)
+    {
+        std::stringstream stream;
+        stream << "FARR MRU: " << message << "\n";
+
+        OutputDebugString(stream.str().c_str());
+    }
+}
+
+//-----------------------------------------------------------------------
+
+void FarrMostRecentlyUsedPlugin::debugOutputResultList(DebugLevel debugLevel, const ItemList& itemList) const
+{
+    if(_debugLevel >= debugLevel)
+    {
+        OutputDebugString("FARR MRU: Begin result list\n");
+
+        ItemList::const_iterator it = itemList.begin();
+        const ItemList::const_iterator end = itemList.end();
+
+        for( ; it != end; ++it)
+        {
+            const Item& item = *it;
+
+            std::stringstream stream;
+            stream << item.path << "\n";
+            OutputDebugString(stream.str().c_str());
+        }
+
+        OutputDebugString("FARR MRU: End result list\n");
+    }
+}
+
+//-----------------------------------------------------------------------
+
+void FarrMostRecentlyUsedPlugin::debugOutputNumber(DebugLevel debugLevel, const char* message, long number) const
+{
+    if(_debugLevel >= debugLevel)
+    {
+        std::stringstream stream;
+        stream << "FARR MRU: " << message << ": " << number << "\n";
+
+        OutputDebugString(stream.str().c_str());
+    }
 }
 
 //-----------------------------------------------------------------------
