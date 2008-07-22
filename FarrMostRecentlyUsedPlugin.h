@@ -37,12 +37,12 @@ public:
 
     const std::string getGroupDescription(const std::string& groupName) const
     {
-        const GroupNameToDescriptionAndRegistryPaths::const_iterator it = _groupNameToDescriptionAndRegistryPaths.find(groupName);
-        if(it != _groupNameToDescriptionAndRegistryPaths.end())
+        const GroupNameToGroup::const_iterator it = _groupNameToGroup.find(groupName);
+        if(it != _groupNameToGroup.end())
         {
-            const GroupDescriptionAndRegistryPaths& groupDescriptionAndRegistryPaths = it->second;
+            const Group& group = it->second;
             
-            return groupDescriptionAndRegistryPaths.first;
+            return group.description;
         }
         else
         {
@@ -56,18 +56,24 @@ private:
     typedef std::list<Item> ItemList;
     typedef std::set<std::string> OrderedStringCollection;
     typedef std::set<std::string> RegistryPaths;
-    typedef std::pair<std::string, RegistryPaths> GroupDescriptionAndRegistryPaths;
-    typedef std::map<std::string, GroupDescriptionAndRegistryPaths> GroupNameToDescriptionAndRegistryPaths;
+    struct Group
+    {
+        std::string description;
+        std::string pathToIconFile;
+        RegistryPaths registryPaths;
+    };
+    typedef std::map<std::string, Group> GroupNameToGroup;
 
     // add items to cache
     void addMenuItems();
+    void addAvailablePrograms();
     void addMyRecentDocuments();
     void addMruApplications();
     void addUserDefinedGroups();
 
     static bool hasMRUList(const RegistryKey& registryKey);
     static bool usesSubkeys(const std::string& restKeyPath);
-    void addGroup(const GroupNameToDescriptionAndRegistryPaths::const_iterator& typeIterator, ItemList& itemList) const;
+    void addGroup(const GroupNameToGroup::const_iterator& typeIterator, ItemList& itemList) const;
     void addMRUs(const std::string& groupName, const std::string& keyPath, ItemList& itemList) const;
     static void addMRUsFromRegistry(const std::string& groupName, HKEY baseKey, const std::string& restKeyPath, ItemList& itemList);
     static void addWithMRUList(const std::string& groupName, const RegistryKey& registryKey, ItemList& itemList);
@@ -103,6 +109,7 @@ private:
     OrderedStringCollection _farrOptions;
     OrderedStringCollection _mruOptions;
 
+    static void replacePathVariables(std::string& path);
     static void removeInvalidStuff(std::string& path);
     static void fixAdobePath(std::string& path);
     class IsSameCharacter
@@ -119,6 +126,12 @@ private:
     private:
         char _character;
     };
+    bool isInstalled(const Group& group) const;
+    bool isInstalled(const std::string& registryPath) const;
+    bool isInstalledFile(const std::string& applicationKey) const;
+    bool isInstalledOpenOffice() const;
+    bool isInstalledNotepadPlusPlus() const;
+    static bool isInstalledRegistry(HKEY baseKey, const std::string& restKeyPath);
 
     // cache all available items (before sorting and filtering)
     ItemList    _itemCache;
@@ -130,6 +143,7 @@ private:
         Mode_Programs,
         Mode_All,
         Mode_User,
+        Mode_ListAvailablePrograms,
         Mode_Menu,
         Mode_None,
     };
@@ -144,7 +158,7 @@ private:
     
     Options::SortMode _sortModeCurrentSearch;
 
-    GroupNameToDescriptionAndRegistryPaths _groupNameToDescriptionAndRegistryPaths;
+    GroupNameToGroup _groupNameToGroup;
 
     CComPtr<IShellLink>   _shellLink;
     CComPtr<IPersistFile> _shellLinkFile;

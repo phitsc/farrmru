@@ -41,9 +41,9 @@ To show a list of most recently used files for selected applications, use the fo
 +npp     : Notepad++
 +office3 : Microsoft Office 2003
 +office7 : Microsoft Office 2007
-+oo      : OpenOffice 2.0
++oo2     : OpenOffice 2.0
 +paint   : Paint
-+photoe  : Photoshop Elements
++photoe  : Photoshop Elements (only 5.0 currently)
 +snag    : SnagIt
 +sql     : SQL Server
 +ted     : TED Notepad

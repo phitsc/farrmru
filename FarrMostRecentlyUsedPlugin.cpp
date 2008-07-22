@@ -112,13 +112,27 @@ void FarrMostRecentlyUsedPlugin::processConfigFile(const std::string& configFile
                     line.erase(0, 1);
 
                     std::string groupDescription;
+                    std::string pathToIconFile;
 
-                    // extract group name, if present
+                    // extract group description, if present
                     std::string::size_type pos = line.find('|');
                     if(pos != std::string::npos)
                     {
                         currentGroupName = line.substr(0, pos);
-                        groupDescription = line.substr(pos + 1);
+
+                        // and possibly path to icon file
+                        std::string::size_type pos2 = line.find('|', pos + 1);
+                        if(pos2 != std::string::npos)
+                        {
+                            groupDescription = line.substr(pos + 1, pos2 - pos - 1);
+                            pathToIconFile = line.substr(pos2 + 1);
+
+                            replacePathVariables(pathToIconFile);
+                        }
+                        else
+                        {
+                            groupDescription = line.substr(pos + 1);
+                        }
                     }
                     else
                     {
@@ -134,20 +148,53 @@ void FarrMostRecentlyUsedPlugin::processConfigFile(const std::string& configFile
                     // adds entry
                     if(!currentGroupName.empty())
                     {
-                        GroupDescriptionAndRegistryPaths& groupDescriptionAndRegistryPaths = _groupNameToDescriptionAndRegistryPaths[currentGroupName];
-                        groupDescriptionAndRegistryPaths.first = groupDescription;
+                        Group& group = _groupNameToGroup[currentGroupName];
+                        group.description = groupDescription;
+                        group.pathToIconFile = pathToIconFile;
                     }
                 }
                 else
                 {
                     if(!currentGroupName.empty())
                     {
-                        GroupDescriptionAndRegistryPaths& groupDescriptionAndRegistryPaths = _groupNameToDescriptionAndRegistryPaths[currentGroupName];
-                        RegistryPaths& registryPaths = groupDescriptionAndRegistryPaths.second;
+                        Group& group = _groupNameToGroup[currentGroupName];
+                        RegistryPaths& registryPaths = group.registryPaths;
 
                         registryPaths.insert(line);
                     }
                 }
+            }
+        }
+    }
+}
+
+//-----------------------------------------------------------------------
+
+struct PathVariableToFolder
+{
+    const char* pathVariable;
+    int         folder;
+};
+
+const PathVariableToFolder PathVariablesToFolders[] =
+{
+    { "%PROGRAMFILES%", CSIDL_PROGRAM_FILES },
+    { "%SYSTEMDIR%", CSIDL_SYSTEM }
+};
+
+const unsigned long PathVariablesToFoldersCount = sizeof(PathVariablesToFolders) / sizeof(PathVariablesToFolders[0]);
+
+void FarrMostRecentlyUsedPlugin::replacePathVariables(std::string& path)
+{
+    for(unsigned long index = 0; index < PathVariablesToFoldersCount; ++index)
+    {
+        const std::string::size_type pos = path.find(PathVariablesToFolders[index].pathVariable);
+        if(pos != std::string::npos)
+        {
+            char folder[MAX_PATH] = { 0 };
+            if(S_OK == SHGetFolderPath(0, PathVariablesToFolders[index].folder, 0, SHGFP_TYPE_CURRENT, folder))
+            {
+                path.replace(pos, strlen(PathVariablesToFolders[index].pathVariable), folder);
             }
         }
     }
@@ -160,15 +207,10 @@ const char* MruAliases[] = {
     "mrup",
     "mrua",
     "mruu",
+    "mrul",
     "mru"
 };
 const unsigned long MruAliasesCount = sizeof(MruAliases) / sizeof(MruAliases[0]);
-
-const std::string MyRecentDocumentsAlias = "mrum";
-const std::string ProgramsAlias = "mrup";
-const std::string AllAlias = "mrua";
-const std::string UserAlias = "mruu";
-const std::string MenuAlias = "mru";
 
 void FarrMostRecentlyUsedPlugin::search(const char* rawSearchString)
 {
@@ -233,6 +275,10 @@ void FarrMostRecentlyUsedPlugin::search(const char* rawSearchString)
                 addUserDefinedGroups();
                 break;
 
+            case Mode_ListAvailablePrograms:
+                addAvailablePrograms();
+                break;
+
             case Mode_Menu:
                 addMenuItems();
                 break;
@@ -241,15 +287,22 @@ void FarrMostRecentlyUsedPlugin::search(const char* rawSearchString)
             debugOutputNumber(Debug_Level1, "Updated item cache. Item count", _itemCache.size());
             debugOutputResultList(Debug_Level2, _itemCache);
 
-            if(mruMode != Mode_Menu)
+            switch(mruMode)
             {
-                RemoveItemsStage1 removeItemsStage1(_options);
-                _itemCache.remove_if(removeItemsStage1);
+            case Mode_MyRecentDocuments:
+            case Mode_Programs:
+            case Mode_All:
+            case Mode_User:
+                {
+                    RemoveItemsStage1 removeItemsStage1(_options);
+                    _itemCache.remove_if(removeItemsStage1);
 
-                debugOutputNumber(Debug_Level1, "After filter stage 1. Item count", _itemCache.size());
-                debugOutputResultList(Debug_Level2, _itemCache);
+                    debugOutputNumber(Debug_Level1, "After filter stage 1. Item count", _itemCache.size());
+                    debugOutputResultList(Debug_Level2, _itemCache);
 
-                updateFileTimes(_itemCache);
+                    updateFileTimes(_itemCache);
+                }
+                break;
             }
 
             _rebuildItemCache = false;
@@ -257,29 +310,35 @@ void FarrMostRecentlyUsedPlugin::search(const char* rawSearchString)
 
         ItemList itemList(_itemCache);
 
-        if(mruMode != Mode_Menu)
+        switch(mruMode)
         {
-            const bool noSubstringFiltering = (_options.sortMode == Options::Sort_NoSorting);   // FARR will do the filtering
-            RemoveItemsStage2 removeItemsStage2(extensions, groups, searchString, noSubstringFiltering);
-            itemList.remove_if(removeItemsStage2);
-
-            debugOutputNumber(Debug_Level1, "After filter stage 2. Item count", itemList.size());
-            debugOutputResultList(Debug_Level2, itemList);
-
-            const bool noSorting = ((mruMode == Mode_Programs) && (groups.size() == 1)) || (_sortModeCurrentSearch == Options::Sort_NoSorting);
-            if(!noSorting)
+        case Mode_MyRecentDocuments:
+        case Mode_Programs:
+        case Mode_All:
+        case Mode_User:
             {
-                sortItems(itemList);
+                const bool noSubstringFiltering = (_options.sortMode == Options::Sort_NoSorting);   // FARR will do the filtering
+                RemoveItemsStage2 removeItemsStage2(extensions, groups, searchString, noSubstringFiltering);
+                itemList.remove_if(removeItemsStage2);
 
-                debugOutputNumber(Debug_Level1, "After sorting. Item count", itemList.size());
+                debugOutputNumber(Debug_Level1, "After filter stage 2. Item count", itemList.size());
+                debugOutputResultList(Debug_Level2, itemList);
+
+                const bool noSorting = ((mruMode == Mode_Programs) && (groups.size() == 1)) || (_sortModeCurrentSearch == Options::Sort_NoSorting);
+                if(!noSorting)
+                {
+                    sortItems(itemList);
+
+                    debugOutputNumber(Debug_Level1, "After sorting. Item count", itemList.size());
+                    debugOutputResultList(Debug_Level2, itemList);
+                }
+
+                RemoveDuplicates removeDuplicates;
+                itemList.remove_if(removeDuplicates);
+
+                debugOutputNumber(Debug_Level1, "After filter stage 3. Item count", itemList.size());
                 debugOutputResultList(Debug_Level2, itemList);
             }
-
-            RemoveDuplicates removeDuplicates;
-            itemList.remove_if(removeDuplicates);
-
-            debugOutputNumber(Debug_Level1, "After filter stage 3. Item count", itemList.size());
-            debugOutputResultList(Debug_Level2, itemList);
         }
 
         _itemVector.assign(itemList.begin(), itemList.end());
@@ -325,6 +384,115 @@ void FarrMostRecentlyUsedPlugin::addMenuItems()
     _itemCache.push_back(Item("Alias mrup|FarrMRU_ConfiguredApps.ico", "List most recently used items of configured programs|restartsearch mrup", Item::Type_Alias));
     _itemCache.push_back(Item("Alias mrua|FarrMRU_All.ico", "List all most recently used items|restartsearch mrua", Item::Type_Alias));
     _itemCache.push_back(Item("Alias mruu|FarrMRU_UserDefined.ico", "List user defined most recently used items|restartsearch mruu", Item::Type_Alias));
+    _itemCache.push_back(Item("Alias mrul", "List all supported and installed applications|restartsearch mrul", Item::Type_Alias));
+}
+
+//-----------------------------------------------------------------------
+
+void FarrMostRecentlyUsedPlugin::addAvailablePrograms()
+{
+    GroupNameToGroup::const_iterator groupNameIterator = _groupNameToGroup.begin();
+    const GroupNameToGroup::const_iterator groupNamesEnd = _groupNameToGroup.end();
+
+    for( ; groupNameIterator != groupNamesEnd; ++groupNameIterator)
+    {
+        const Group& group = groupNameIterator->second;
+
+        if(isInstalled(group))
+        {
+            const Group& group = groupNameIterator->second;
+
+            std::string groupName = "Alias mrup +" + groupNameIterator->first;
+            if(!group.pathToIconFile.empty())
+            {
+                groupName += "|" + group.pathToIconFile;
+            }
+            const std::string path = "List mru items of " + group.description + "|restartsearch mrup +" + groupNameIterator->first;
+            _itemCache.push_back(Item(groupName, path, Item::Type_Alias));
+        }
+    }
+}
+
+//-----------------------------------------------------------------------
+
+bool FarrMostRecentlyUsedPlugin::isInstalled(const Group& group) const
+{
+    const RegistryPaths& registryPaths = group.registryPaths;
+
+    RegistryPaths::const_iterator registryPathIterator = registryPaths.begin();
+    const RegistryPaths::const_iterator registryPathsEnd = registryPaths.end();
+    for( ; registryPathIterator != registryPathsEnd; ++registryPathIterator)
+    {
+        const std::string& registryPath = *registryPathIterator;
+
+        if(isInstalled(registryPath))
+        {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+//-----------------------------------------------------------------------
+
+bool FarrMostRecentlyUsedPlugin::isInstalled(const std::string& keyPath) const
+{
+    std::string::size_type backslashPos = keyPath.find('\\');
+    if(backslashPos != std::string::npos)
+    {
+        const std::string baseKeyName = keyPath.substr(0, backslashPos);
+        const std::string restKey = keyPath.substr(backslashPos + 1);
+
+        if(baseKeyName == "HKEY_CURRENT_USER")
+        {
+            return isInstalledRegistry(HKEY_CURRENT_USER, restKey);
+        }
+        else if(baseKeyName == "HKEY_LOCAL_MACHINE")
+        {
+            return isInstalledRegistry(HKEY_LOCAL_MACHINE, restKey);
+        }
+        else if(baseKeyName == "HKEY_USERS")
+        {
+            return isInstalledRegistry(HKEY_USERS, restKey);
+        }
+        else if(baseKeyName == "FARR_MRU")
+        {
+            return isInstalledFile(restKey);
+        }
+    }
+
+    return false;
+}
+
+//-----------------------------------------------------------------------
+
+bool FarrMostRecentlyUsedPlugin::isInstalledRegistry(HKEY baseKey, const std::string& restKeyPath)
+{
+    std::string::size_type pipePos = restKeyPath.rfind('|');
+
+    const std::string subKey = restKeyPath.substr(0, pipePos);
+
+    RegistryKey key;
+    return key.open(baseKey, subKey.c_str(), KEY_READ);
+}
+
+//-----------------------------------------------------------------------
+
+bool FarrMostRecentlyUsedPlugin::isInstalledFile(const std::string& applicationKey) const
+{
+    if(applicationKey == "openoffice")
+    {
+        return isInstalledOpenOffice();
+    }
+    else if(applicationKey == "npp")
+    {
+        return isInstalledNotepadPlusPlus();
+    }
+    else
+    {
+        return false;
+    }
 }
 
 //-----------------------------------------------------------------------
@@ -359,8 +527,8 @@ void FarrMostRecentlyUsedPlugin::addMyRecentDocuments()
 
 void FarrMostRecentlyUsedPlugin::addMruApplications()
 {
-    GroupNameToDescriptionAndRegistryPaths::const_iterator groupNameIterator = _groupNameToDescriptionAndRegistryPaths.begin();
-    const GroupNameToDescriptionAndRegistryPaths::const_iterator groupNamesEnd = _groupNameToDescriptionAndRegistryPaths.end();
+    GroupNameToGroup::const_iterator groupNameIterator = _groupNameToGroup.begin();
+    const GroupNameToGroup::const_iterator groupNamesEnd = _groupNameToGroup.end();
 
     for( ; groupNameIterator != groupNamesEnd; ++groupNameIterator)
     {
@@ -377,8 +545,8 @@ void FarrMostRecentlyUsedPlugin::addUserDefinedGroups()
         addMyRecentDocuments();
     }
 
-    GroupNameToDescriptionAndRegistryPaths::const_iterator groupNameIterator = _groupNameToDescriptionAndRegistryPaths.begin();
-    const GroupNameToDescriptionAndRegistryPaths::const_iterator groupNamesEnd = _groupNameToDescriptionAndRegistryPaths.end();
+    GroupNameToGroup::const_iterator groupNameIterator = _groupNameToGroup.begin();
+    const GroupNameToGroup::const_iterator groupNamesEnd = _groupNameToGroup.end();
 
     for( ; groupNameIterator != groupNamesEnd; ++groupNameIterator)
     {
@@ -392,11 +560,11 @@ void FarrMostRecentlyUsedPlugin::addUserDefinedGroups()
 
 //-----------------------------------------------------------------------
 
-void FarrMostRecentlyUsedPlugin::addGroup(const GroupNameToDescriptionAndRegistryPaths::const_iterator& typeIterator, ItemList& itemList) const
+void FarrMostRecentlyUsedPlugin::addGroup(const GroupNameToGroup::const_iterator& typeIterator, ItemList& itemList) const
 {
     const std::string& groupName = typeIterator->first;
-    const GroupDescriptionAndRegistryPaths& groupDescriptionAndRegistryPaths = typeIterator->second;
-    const RegistryPaths& registryPaths = groupDescriptionAndRegistryPaths.second;
+    const Group& group = typeIterator->second;
+    const RegistryPaths& registryPaths = group.registryPaths;
 
     RegistryPaths::const_iterator registryPathIterator = registryPaths.begin();
     const RegistryPaths::const_iterator registryPathsEnd = registryPaths.end();
@@ -436,6 +604,8 @@ void FarrMostRecentlyUsedPlugin::addMRUs(const std::string& groupName, const std
         }
     }
 }
+
+//-----------------------------------------------------------------------
 
 void FarrMostRecentlyUsedPlugin::addMRUsFromRegistry(const std::string& groupName, HKEY baseKey, const std::string& restKeyPath, ItemList& itemList)
 {
@@ -641,6 +811,22 @@ const char* OpenOffice_History = "History";
 const char* OpenOffice_List = "List";
 const char* OpenOffice_URL = "URL";
 
+bool FarrMostRecentlyUsedPlugin::isInstalledOpenOffice() const
+{
+    if(!_appDataFolder.empty())
+    {
+        char recentFile[MAX_PATH] = { 0 };
+        strcpy(recentFile, _appDataFolder.c_str());
+        PathAppend(recentFile, OpenOffice_RecentFile);
+
+        return (PathFileExists(recentFile) == TRUE);
+    }
+    else
+    {
+        return false;
+    }
+}
+
 void FarrMostRecentlyUsedPlugin::addMRUs_OpenOffice(const std::string& groupName, ItemList& itemList) const
 {
     if(!_appDataFolder.empty())
@@ -721,6 +907,22 @@ const char* Npp_RecentFile = "\\Notepad++\\config.xml";
 
 const char* Npp_History = "History";
 
+bool FarrMostRecentlyUsedPlugin::isInstalledNotepadPlusPlus() const
+{
+    if(!_appDataFolder.empty())
+    {
+        char recentFile[MAX_PATH] = { 0 };
+        strcpy(recentFile, _appDataFolder.c_str());
+        PathAppend(recentFile, Npp_RecentFile);
+
+        return (PathFileExists(recentFile) == TRUE);
+    }
+    else
+    {
+        return false;
+    }
+}
+
 void FarrMostRecentlyUsedPlugin::addMRUs_NotepadPlusPlus(const std::string& groupName, ItemList& itemList) const
 {
     if(!_appDataFolder.empty())
@@ -799,7 +1001,7 @@ void FarrMostRecentlyUsedPlugin::fixAdobePath(std::string& path)
             else
             {
                 // assume UNC, insert another backslash
-                path.insert(0, '\\');
+                path.insert(0, "\\");
             }
         }
     }
@@ -823,16 +1025,21 @@ const Item& FarrMostRecentlyUsedPlugin::getItem(const ItemVector::size_type& ind
 
 void FarrMostRecentlyUsedPlugin::showOptions()
 {
-    Groups groups;
+    OptionsDialog::Groups groups;
 
-    groups.push_back(Group(MyRecentDocuments_GroupName, "My Recent Documents"));
+    groups.push_back(OptionsDialog::Group(MyRecentDocuments_GroupName, "My Recent Documents"));
 
-    GroupNameToDescriptionAndRegistryPaths::const_iterator it = _groupNameToDescriptionAndRegistryPaths.begin();
-    GroupNameToDescriptionAndRegistryPaths::const_iterator end = _groupNameToDescriptionAndRegistryPaths.end();
+    GroupNameToGroup::const_iterator it = _groupNameToGroup.begin();
+    GroupNameToGroup::const_iterator end = _groupNameToGroup.end();
 
     for( ; it != end; ++it)
     {
-        groups.push_back(Group(it->first, it->second.first));
+        const Group& group = it->second;
+
+        if(isInstalled(group))
+        {
+            groups.push_back(OptionsDialog::Group(it->first, group.description));
+        }
     }
 
     OptionsDialog dialog(_optionsFile, groups);

@@ -8,23 +8,21 @@
 
 //-----------------------------------------------------------------------
 
-struct Group
-{
-    Group(std::string name_, std::string description_)
-        :name(name_), description(description_)
-    {}
-
-    std::string name;
-    std::string description;
-};
-
-typedef std::vector<Group> Groups;
-
-//-----------------------------------------------------------------------
-
 class OptionsDialog : public CDialogImpl<OptionsDialog>
 {
 public:
+    struct Group
+    {
+        Group(std::string name_, std::string description_)
+            :name(name_), description(description_)
+        {}
+
+        std::string name;
+        std::string description;
+    };
+
+    typedef std::vector<Group> Groups;
+
     enum { IDD = IDD_DIALOG_OPTIONS };
 
     OptionsDialog(OptionsFile& optionsFile, Groups& groups)
