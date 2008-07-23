@@ -545,7 +545,7 @@ PREFUNCDEF BOOL EFuncName_Request_ItemResultByIndex(int resultindex, char *destb
         break;
 
     case Item::Type_Alias:
-        *entrytypep = E_EntryType_ALIAS;
+        *entrytypep = (E_EntryTypeT)7;
         break;
 
     default:

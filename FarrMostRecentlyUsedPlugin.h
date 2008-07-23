@@ -80,6 +80,7 @@ private:
     static void addWithItemNo(const std::string& groupName, const RegistryKey& registryKey, ItemList& itemList);
     static void addWithSubkey(const std::string& groupName, const RegistryKey& registryKey, const std::string& valueName, ItemList& itemList);
     void addMRUsFromFile(const std::string& groupName, const std::string& applicationKey, ItemList& itemList) const;
+    void addMRUsFromIniFile(const std::string& groupName, const std::string& iniFileSpec, ItemList& itemList) const;
 
     void addMRUs_OpenOffice(const std::string& groupName, ItemList& itemList) const;
     void addMRUs_NotepadPlusPlus(const std::string& groupName, ItemList& itemList) const;
@@ -110,7 +111,7 @@ private:
     OrderedStringCollection _mruOptions;
 
     static void replacePathVariables(std::string& path);
-    static void removeInvalidStuff(std::string& path);
+    static void removeInvalidStuffBeforePath(std::string& path);
     static void fixAdobePath(std::string& path);
     class IsSameCharacter
     {
@@ -129,6 +130,7 @@ private:
     bool isInstalled(const Group& group) const;
     bool isInstalled(const std::string& registryPath) const;
     bool isInstalledFile(const std::string& applicationKey) const;
+    bool isInstalledIniFile(const std::string& iniFileSpec) const;
     bool isInstalledOpenOffice() const;
     bool isInstalledNotepadPlusPlus() const;
     static bool isInstalledRegistry(HKEY baseKey, const std::string& restKeyPath);

@@ -24,6 +24,7 @@ Use the following aliases to give you a list of your most recently used files:
 - mrup : Shows files of configured programs, storing their MRU files in the registry
 - mrua : Show a combined list of files out of mrum and mrup
 - mruu : Show files from selected groups only (selectable in the options dialog)
+- mrul : Show a list of installed and supported applications for further selection
 
 Use the following modifier keywords to change the search:
 +byname   : Force sorting by name
@@ -36,6 +37,7 @@ To show a list of most recently used files for selected applications, use the fo
 +acrobat : Adobe Acrobat Reader (only 9 currently)
 +dwcs3	 : Dreamweaver CS3
 +foxit   : Foxit Reader
++icofx   : IcoFX (only 1.6 currently)
 +km      : KMPlayer
 +msvc8   : MS Visual Studio 2005
 +msvc9   : MS Visual Studio 2008

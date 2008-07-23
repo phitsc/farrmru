@@ -179,7 +179,8 @@ struct PathVariableToFolder
 const PathVariableToFolder PathVariablesToFolders[] =
 {
     { "%PROGRAMFILES%", CSIDL_PROGRAM_FILES },
-    { "%SYSTEMDIR%", CSIDL_SYSTEM }
+    { "%SYSTEMDIR%", CSIDL_SYSTEM },
+    { "%USERAPPDATA%", CSIDL_APPDATA }
 };
 
 const unsigned long PathVariablesToFoldersCount = sizeof(PathVariablesToFolders) / sizeof(PathVariablesToFolders[0]);
@@ -460,6 +461,10 @@ bool FarrMostRecentlyUsedPlugin::isInstalled(const std::string& keyPath) const
         {
             return isInstalledFile(restKey);
         }
+        else if(baseKeyName == "INI_FILE")
+        {
+            return isInstalledIniFile(restKey);
+        }
     }
 
     return false;
@@ -602,6 +607,10 @@ void FarrMostRecentlyUsedPlugin::addMRUs(const std::string& groupName, const std
         {
             addMRUsFromFile(groupName, restKey, itemList);
         }
+        else if(baseKeyName == "INI_FILE")
+        {
+            addMRUsFromIniFile(groupName, restKey, itemList);
+        }
     }
 }
 
@@ -716,7 +725,7 @@ void FarrMostRecentlyUsedPlugin::addWithItemNo(const std::string& groupName, con
 
         std::string item(value);
 
-        removeInvalidStuff(item);
+        removeInvalidStuffBeforePath(item);
 
         orderedItems.insert(OrderedItems::value_type(itemNumber, item));
 
@@ -786,6 +795,79 @@ void FarrMostRecentlyUsedPlugin::addWithSubkey(const std::string& groupName, con
         const std::string& item = it->second;
         
         itemList.push_back(Item(groupName, item, PathIsURL(item.c_str()) ? Item::Type_URL : Item::Type_File));
+    }
+}
+
+//-----------------------------------------------------------------------
+
+bool FarrMostRecentlyUsedPlugin::isInstalledIniFile(const std::string& iniFileSpec) const
+{
+    // iniFileSpec is: pathToIniFile|SectionName|BaseKeyName
+    const std::string::size_type pos1 = iniFileSpec.find('|');
+    if(pos1 != std::string::npos)
+    {
+        const std::string::size_type pos2 = iniFileSpec.find('|', pos1 + 1);
+        if(pos2 != std::string::npos)
+        {
+            std::string path = iniFileSpec.substr(0, pos1);
+
+            replacePathVariables(path);
+
+            return (PathFileExists(path.c_str()) == TRUE);
+        }
+    }
+
+    return false;
+}
+
+//-----------------------------------------------------------------------
+
+void FarrMostRecentlyUsedPlugin::addMRUsFromIniFile(const std::string& groupName, const std::string& iniFileSpec, ItemList& itemList) const
+{
+    // iniFileSpec is: pathToIniFile|SectionName|BaseKeyName
+    const std::string::size_type pos1 = iniFileSpec.find('|');
+    if(pos1 != std::string::npos)
+    {
+        const std::string::size_type pos2 = iniFileSpec.find('|', pos1 + 1);
+        if(pos2 != std::string::npos)
+        {
+            std::string path = iniFileSpec.substr(0, pos1);
+            replacePathVariables(path);
+            const std::string sectionName = iniFileSpec.substr(pos1 + 1, pos2 - pos1 - 1);
+            const std::string baseKeyName = iniFileSpec.substr(pos2 + 1);
+
+            const unsigned long MaxMruFileIndex = 100;
+            for(unsigned long index = 0; index < MaxMruFileIndex; ++index)
+            {
+                std::stringstream stream;
+                stream << baseKeyName << index;
+
+                // allow space for garbage
+                const int size = MAX_PATH * 2;
+                char mruValue[size];
+                DWORD result = GetPrivateProfileString(sectionName.c_str(), stream.str().c_str(), 0, mruValue, size, path.c_str());
+                if(result != 0)
+                {
+                    std::string item(mruValue);
+
+                    removeInvalidStuffBeforePath(item);
+
+                    itemList.push_back(Item(groupName, item, PathIsURL(item.c_str()) ? Item::Type_URL : Item::Type_File));
+                }
+                else
+                {
+                    if(index == 0)
+                    {
+                        // 1-based? try next
+                        continue;
+                    }
+                    else
+                    {
+                        break;
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -970,12 +1052,20 @@ void FarrMostRecentlyUsedPlugin::addMRUs_NotepadPlusPlus(const std::string& grou
 
 //-----------------------------------------------------------------------
 
-void FarrMostRecentlyUsedPlugin::removeInvalidStuff(std::string& path)
+void FarrMostRecentlyUsedPlugin::removeInvalidStuffBeforePath(std::string& path)
 {
-    const std::string::size_type pos = path.find('*');
-    if(pos != std::string::npos)
+    const std::string::size_type pos1 = path.find(":\\");
+    if((pos1 != std::string::npos) && (pos1 >= 1))
     {
-        path.erase(0, pos + 1);
+        path.erase(0, pos1 - 1);
+    }
+    else
+    {
+        const std::string::size_type pos2 = path.find("\\\\");
+        if(pos2 != std::string::npos)
+        {
+            path.erase(0, pos2);
+        }
     }
 }
 
