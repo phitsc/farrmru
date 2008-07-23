@@ -384,7 +384,7 @@ void FarrMostRecentlyUsedPlugin::addMenuItems()
     _itemCache.push_back(Item("Alias mrup|FarrMRU_ConfiguredApps.ico", "List most recently used items of configured programs|restartsearch mrup", Item::Type_Alias));
     _itemCache.push_back(Item("Alias mrua|FarrMRU_All.ico", "List all most recently used items|restartsearch mrua", Item::Type_Alias));
     _itemCache.push_back(Item("Alias mruu|FarrMRU_UserDefined.ico", "List user defined most recently used items|restartsearch mruu", Item::Type_Alias));
-    _itemCache.push_back(Item("Alias mrul", "List all supported and installed applications|restartsearch mrul", Item::Type_Alias));
+    _itemCache.push_back(Item("Alias mrul|FarrMRU_ListInstalledApps.ico", "List all supported and installed applications|restartsearch mrul", Item::Type_Alias));
 }
 
 //-----------------------------------------------------------------------

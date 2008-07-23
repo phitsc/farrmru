@@ -33,7 +33,8 @@ Use the following modifier keywords to change the search:
 +.[ext]   : Filter results by file extension [ext]. More than one can be used, e.g. +.h +.cpp
 
 To show a list of most recently used files for selected applications, use the following modifiers:
-+acrobat : Adobe Acrobat Reader 9
++acrobat : Adobe Acrobat Reader (only 9 currently)
++dwcs3	 : Dreamweaver CS3
 +foxit   : Foxit Reader
 +km      : KMPlayer
 +msvc8   : MS Visual Studio 2005
