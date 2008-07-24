@@ -148,6 +148,8 @@ void FarrMostRecentlyUsedPlugin::processConfigFile(const std::string& configFile
                     // adds entry
                     if(!currentGroupName.empty())
                     {
+                        // erase if it's already there
+                        _groupNameToGroup.erase(currentGroupName);
                         Group& group = _groupNameToGroup[currentGroupName];
                         group.description = groupDescription;
                         group.pathToIconFile = pathToIconFile;
