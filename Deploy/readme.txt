@@ -1,6 +1,6 @@
 ===============================================================================
 
-FARR MostRecentlyUsed plugin - 0.4.0 - 9. July 2008
+FARR MostRecentlyUsed plugin - 0.5.0 - 24. July 2008
 
 (c) 2008 Philipp Tschannen
 
@@ -73,7 +73,7 @@ Sort:
 - By date last accessed : Sort by date last accessed. This is the default.
 - By date last modified : Sort by date last modified.
 - By date created : Sort by date created. This is here for completeness, don't know if it makes much sense.
- - Alphabetically : Sort the result alphabetically.
+- Alphabetically : Sort the result alphabetically.
 
 Display
 - Show group name instead of path : Will show the group name instead of the path when listing most recently used files for selected applications.
@@ -81,13 +81,24 @@ Display
 
 FarrMostRecentlyUsed.config / FarrMostRecentlyUsed.user
 =====================
-The FARR MostRecentlyUsed plugin can list most recently used files for all applications that store their most recently used files in the registry by listing these files in a certain application defined registry key.
+The FARR MostRecentlyUsed plugin can list most recently used files for many applications that store their most recently used files in the registry or in an .ini file.
 
 The config file has the following format:
-+modifier|Group Name
-RegistryKeyToMRUList
++modifier|Group Name|PathToIconFile (usually program.exe)
+RegistryKeyToMRUList or PathToIniFilePlusSectionAndKey
 
-FarrMostRecentlyUsed.user will never be overwritten with new updates of the plugin. Put your own stuff in here.
+RegistryKeyToMRUList typically looks like this:
+HKEY_CURRENT_USER\Software\Application Name\Recent File List
+
+PathToIniFilePlusSectionAndKey typically looks like this:
+INI_FILE\PathToIniFile.ini|Section|BaseKeyName
+within the .ini file you find something like this:
+[Section]
+BaseKeyName1=c:\blah\mru1.txt
+BaseKeyName2=c:\blah\mru2.txt
+
+
+FarrMostRecentlyUsed.user has the same format as FarrMostRecentlyUsed.config but will never be overwritten with new updates of the plugin. Put your own stuff in here.
 
 
 Details on File Dates
@@ -116,6 +127,15 @@ This plugin is provided 'as is'. No warranty of any kind is expressed or implied
 
 Version history
 =====================
+0.5.0
+- Added support for mru items specified in .ini files
+- Added new alias mrul which gives a list of supported and installed applications
+- User defined result list option now only shows installed applications
+- Added / Changed the following applications:
+  - Added Dreamweaver CS3 (+dwcs3) *
+  - Added IcoFX 1.6 (+icofx)
+  - Changed +oo to +oo2 (in expectance of OpenOffice 3)
+
 0.4.0
 - Added icons to the simple menu (thanks hamradio!)
 - Added support for the following applications:

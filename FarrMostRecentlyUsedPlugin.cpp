@@ -691,6 +691,8 @@ void FarrMostRecentlyUsedPlugin::addWithMRUList(const std::string& groupName, co
             {
                 std::string mruValue(mruValueBuffer);
 
+                removeInvalidStuffBeforePath(mruValue);
+
                 itemList.push_back(Item(groupName, mruValue, PathIsURL(mruValue.c_str()) ? Item::Type_URL : Item::Type_File));
             }
         }
