@@ -1,6 +1,6 @@
 ===============================================================================
 
-FARR MostRecentlyUsed plugin - 0.5.0 - 24. July 2008
+FARR MostRecentlyUsed plugin - 0.5.1 - 2. August 2008
 
 (c) 2008 Philipp Tschannen
 
@@ -34,26 +34,28 @@ Use the following modifier keywords to change the search:
 +.[ext]   : Filter results by file extension [ext]. More than one can be used, e.g. +.h +.cpp
 
 To show a list of most recently used files for selected applications, use the following modifiers:
-+acrobat : Adobe Acrobat Reader (only 9 currently)
-+dwcs3	 : Dreamweaver CS3
-+foxit   : Foxit Reader
-+icofx   : IcoFX (only 1.6 currently)
-+km      : KMPlayer
-+msvc8   : MS Visual Studio 2005
-+msvc9   : MS Visual Studio 2008
-+npp     : Notepad++
-+office3 : Microsoft Office 2003
-+office7 : Microsoft Office 2007
-+oo2     : OpenOffice 2.0
-+paint   : Paint
-+photoe  : Photoshop Elements (only 5.0 currently)
-+snag    : SnagIt
-+sql     : SQL Server
-+ted     : TED Notepad
-+winrar  : WinRAR
-+winuae  : WinUAE
-+wmp     : Windows Media Player
-+wordpad : Wordpad
++acrobat  : Adobe Acrobat Reader (only 9 currently)
++akelpad  : Akelpad
++audacity : Audacity
++dwcs3	  : Dreamweaver CS3
++foxit    : Foxit Reader
++icofx    : IcoFX (only 1.6 currently)
++km       : KMPlayer
++msvc8    : MS Visual Studio 2005
++msvc9    : MS Visual Studio 2008
++npp      : Notepad++
++office3  : Microsoft Office 2003
++office7  : Microsoft Office 2007
++oo2      : OpenOffice 2.0
++paint    : Paint
++photoe   : Photoshop Elements (only 5.0 currently)
++snag     : SnagIt
++sql      : SQL Server
++ted      : TED Notepad
++winrar   : WinRAR
++winuae   : WinUAE
++wmp      : Windows Media Player
++wordpad  : Wordpad
 
 (built-in group for My Recent Documents)
 +recent  : My Recent Documents
@@ -98,7 +100,9 @@ BaseKeyName1=c:\blah\mru1.txt
 BaseKeyName2=c:\blah\mru2.txt
 
 
-FarrMostRecentlyUsed.user has the same format as FarrMostRecentlyUsed.config but will never be overwritten with new updates of the plugin. Put your own stuff in here.
+FarrMostRecentlyUsed.user has the same format as FarrMostRecentlyUsed.config but will never be overwritten with new updates of the plugin. Put your own stuff in here. 
+
+Modifier entries in FarrMostRecentlyUsed.user override identical ones in FarrMostRecentlyUsed.config. This can be used for example if you choose to install an application in a location other than the default (e.g. not in the default 'Program Files' folder). Just duplicate the respective section in your FarrMostRecentlyUsed.user and change the icon path.
 
 
 Details on File Dates
@@ -127,6 +131,15 @@ This plugin is provided 'as is'. No warranty of any kind is expressed or implied
 
 Version history
 =====================
+0.5.1
+- Modifier entries in FarrMostRecentlyUsed.user now override identical ones in FarrMostRecentlyUsed.config.
+- Added / Changed the following applications:
+  - Added Akelpad (+akelpad) *
+  - Added Audacity (+audacity) *
+  - Added icon path for TED Notepad *
+  - Added icon path for WinRAR *
+  - Added icon path for WinUAE *
+
 0.5.0
 - Added support for mru items specified in .ini files
 - Added new alias mrul which gives a list of supported and installed applications
