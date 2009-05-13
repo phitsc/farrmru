@@ -13,11 +13,11 @@
 #undef APSTUDIO_READONLY_SYMBOLS
 
 /////////////////////////////////////////////////////////////////////////////
-// English (U.S.) resources
+// Neutral resources
 
-#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ENU)
+#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_NEU)
 #ifdef _WIN32
-LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
+LANGUAGE LANG_NEUTRAL, SUBLANG_NEUTRAL
 #pragma code_page(1252)
 #endif //_WIN32
 
@@ -27,8 +27,8 @@ LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
 //
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION 0,5,1,0
- PRODUCTVERSION 0,5,1,0
+ FILEVERSION 1,0,0,0
+ PRODUCTVERSION 1,0,0,0
  FILEFLAGSMASK 0x3fL
 #ifdef _DEBUG
  FILEFLAGS 0x21L
@@ -41,25 +41,25 @@ VS_VERSION_INFO VERSIONINFO
 BEGIN
     BLOCK "StringFileInfo"
     BEGIN
-        BLOCK "040904e4"
+        BLOCK "000004b0"
         BEGIN
-            VALUE "FileDescription", "FARR MostRecentlyUsed plugin"
-            VALUE "FileVersion", "0.5.1"
+            VALUE "FileDescription", "FARR Most Recently Used plugin"
+            VALUE "FileVersion", "1.0.0"
             VALUE "InternalName", "FarrMostRecentlyUsed.dll"
-            VALUE "LegalCopyright", "(c) 2008 Philipp Tschannen"
+            VALUE "LegalCopyright", "(c) 2009 Philipp Tschannen"
             VALUE "OriginalFilename", "FarrMostRecentlyUsed.dll"
             VALUE "ProductName", "FARR plugin"
-            VALUE "ProductVersion", "0.5.1"
-            VALUE "SpecialBuild", "20080802 - 0.5.1"
+            VALUE "ProductVersion", "1.0.0"
+            VALUE "SpecialBuild", "13. May 2009"
         END
     END
     BLOCK "VarFileInfo"
     BEGIN
-        VALUE "Translation", 0x409, 1252
+        VALUE "Translation", 0x0, 1200
     END
 END
 
-#endif    // English (U.S.) resources
+#endif    // Neutral resources
 /////////////////////////////////////////////////////////////////////////////
 
 

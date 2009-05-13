@@ -65,6 +65,7 @@ private:
     typedef std::map<std::string, Group> GroupNameToGroup;
 
     // add items to cache
+    void addAbout();
     void addMenuItems();
     void addAvailablePrograms();
     void addMyRecentDocuments();
@@ -141,6 +142,7 @@ private:
 
     enum MruMode
     {
+        Mode_About,
         Mode_MyRecentDocuments,
         Mode_Programs,
         Mode_All,

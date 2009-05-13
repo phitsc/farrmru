@@ -6,6 +6,7 @@
 #include "RegistryKey.h"
 #include "FileList.h"
 #include "SortingAndFiltering.h"
+#include "Util.h"
 
 #include <algorithm>
 #include <sstream>
@@ -13,6 +14,8 @@
 #include <map>
 
 #include "tinyxml/tinyxml.h"
+
+extern HINSTANCE dllInstanceHandle;
 
 //-----------------------------------------------------------------------
 
@@ -206,6 +209,7 @@ void FarrMostRecentlyUsedPlugin::replacePathVariables(std::string& path)
 //-----------------------------------------------------------------------
 
 const char* MruAliases[] = {
+    "mruz",
     "mrum",
     "mrup",
     "mrua",
@@ -259,6 +263,10 @@ void FarrMostRecentlyUsedPlugin::search(const char* rawSearchString)
             switch(mruMode)
             {
             case Mode_None:
+                break;
+
+            case Mode_About:
+                addAbout();
                 break;
 
             case Mode_MyRecentDocuments:
@@ -388,6 +396,7 @@ void FarrMostRecentlyUsedPlugin::addMenuItems()
     _itemCache.push_back(Item("Alias mrua|FarrMRU_All.ico", "List all most recently used items|restartsearch mrua", Item::Type_Alias));
     _itemCache.push_back(Item("Alias mruu|FarrMRU_UserDefined.ico", "List user defined most recently used items|restartsearch mruu", Item::Type_Alias));
     _itemCache.push_back(Item("Alias mrul|FarrMRU_ListInstalledApps.ico", "List all supported and installed applications|restartsearch mrul", Item::Type_Alias));
+    _itemCache.push_back(Item(" |About.ico", "About|restartsearch mruz", Item::Type_Alias));
 }
 
 //-----------------------------------------------------------------------
@@ -500,6 +509,19 @@ bool FarrMostRecentlyUsedPlugin::isInstalledFile(const std::string& applicationK
     {
         return false;
     }
+}
+
+//-----------------------------------------------------------------------
+
+void FarrMostRecentlyUsedPlugin::addAbout()
+{
+    util::VersionInfo versionInfo(dllInstanceHandle);
+    const std::string version = versionInfo.getFileVersion().getAsString() + " - " + versionInfo.getSpecialBuild();
+    _itemCache.push_back(Item("Visit FarrMostRecentlyUsed Website|FarrMRU.ico", version + "|farrmru.objecttechnology.com", Item::Type_Alias));
+
+    _itemCache.push_back(Item("Programming|Philipp.ico", "Philipp Tschannen (phitsc)| ", Item::Type_Alias));
+    _itemCache.push_back(Item("Icon Design|Hamradio.ico", "Carroll - (hamradio on donationcoder.com forums)|www.hamradiousa.net", Item::Type_Alias));
+    _itemCache.push_back(Item("Support this plugin|Donate.ico", "Donate|www.donationcoder.com/Forums/bb/index.php?action=dlist;sa=search;search=149485;fields=uid", Item::Type_Alias));
 }
 
 //-----------------------------------------------------------------------
@@ -723,15 +745,18 @@ void FarrMostRecentlyUsedPlugin::addWithItemNo(const std::string& groupName, con
         std::string valueNameString(valueName);
         std::string::size_type startOfNumber = valueNameString.find_first_of("0123456789");
 
-        std::stringstream stream(valueNameString.substr(startOfNumber));
-        unsigned long itemNumber;
-        stream >> itemNumber;
+        if(startOfNumber != std::string::npos)
+        {
+            std::stringstream stream(valueNameString.substr(startOfNumber));
+            unsigned long itemNumber;
+            stream >> itemNumber;
 
-        std::string item(value);
+            std::string item(value);
 
-        removeInvalidStuffBeforePath(item);
+            removeInvalidStuffBeforePath(item);
 
-        orderedItems.insert(OrderedItems::value_type(itemNumber, item));
+            orderedItems.insert(OrderedItems::value_type(itemNumber, item));
+        }
 
         ++index;
         length = MaxValueNameLength;

@@ -103,8 +103,10 @@ PREFUNCDEF BOOL EFuncName_DoInit(const char* fullfilename, void* thisptr, const 
     char* rpathchar=strrchr(dlldir,'\\');
     if (rpathchar!=NULL)
         *(rpathchar+1)='\0';
+    
     // icon absolute path
-    strcpy(iconfpath,dlldir);
+    strcpy(iconfpath, dlldir);
+    PathAppend(iconfpath, "icons");
 
     // Program-Specific Initialization
     return MyPlugin_DoInit();
@@ -174,16 +176,6 @@ PREFUNCDEF BOOL EFuncName_GetStrVal(const char* varname,char *destbuf, int maxle
     if (strcmp(varname,DEF_FieldName_DisplayName)==0)
     {
         strcpy(destbuf,ThisPlugin_DisplayName);
-        return TRUE;
-    }
-    if (strcmp(varname,DEF_FieldName_VersionString)==0)
-    {
-        strcpy(destbuf,ThisPlugin_VersionString);
-        return TRUE;
-    }
-    if (strcmp(varname,DEF_FieldName_ReleaseDateString)==0)
-    {
-        strcpy(destbuf,ThisPlugin_ReleaseDateString);
         return TRUE;
     }
     if (strcmp(varname,DEF_FieldName_Author)==0)

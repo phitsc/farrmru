@@ -50,11 +50,9 @@
 // Plugin defines refered to in JrPlugin_GenericShell.cpp
 // IMPORTANT: you need to customize there
 //
-#define ThisPlugin_DisplayName			"FARR Most Recently Used Plugin"
-#define ThisPlugin_VersionString		"0.5.1"
-#define ThisPlugin_ReleaseDateString	"August 2, 2008"
+#define ThisPlugin_DisplayName			"FarrMostRecentlyUsed"
 #define ThisPlugin_Author			    "Philipp Tschannen (phitsc)"
-#define ThisPlugin_HomepageURL			"http://farrmru.origo.ethz.ch"
+#define ThisPlugin_HomepageURL			"http://farrmru.objecttechnology.com"
 #define ThisPlugin_UpdateURL			""
 #define ThisPlugin_ShortDescription		"Find most recently used files."
 #define ThisPlugin_LongDescription		"Find files in Window's Recent Items/My Recent Documents folder or in the most recently used files lists of selected applications."

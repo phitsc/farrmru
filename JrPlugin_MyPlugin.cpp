@@ -19,6 +19,7 @@
 
 #include "FarrMostRecentlyUsedPlugin.h"
 #include "RegistryKey.h"
+#include "Util.h"
 
 
 
@@ -176,6 +177,19 @@ BOOL MyPlugin_DoShutdown()
 //-----------------------------------------------------------------------
 BOOL MyPlugin_GetStrVal(const char* varname,char *destbuf, int /*maxlen*/)
 {
+    if (strcmp(varname, DEF_FieldName_VersionString)==0)
+    {
+        util::VersionInfo versionInfo(dllInstanceHandle);
+        strcpy(destbuf, versionInfo.getFileVersion().getAsString().c_str());
+        return TRUE;
+    }
+    if (strcmp(varname, DEF_FieldName_ReleaseDateString)==0)
+    {
+        util::VersionInfo versionInfo(dllInstanceHandle);
+        strcpy(destbuf, versionInfo.getSpecialBuild().c_str());
+        return TRUE;
+    }
+
     // FARR: default values for FARR fields
     if (strcmp(varname,DEF_FieldName_RegexStr) == 0)
     {
@@ -410,7 +424,7 @@ PREFUNCDEF BOOL EFuncName_Ask_WantFeature(E_WantFeaturesT featureid)
         return FALSE;
     case E_SupportFeatures_tryhandle_trigger:
         // do we want to try to handle triggers when a result is launched
-        return FALSE;
+        return TRUE;
     case E_SupportFeatures_addinfo_files:
         // do we want to try to handle triggers when a result is launched
         return FALSE;
@@ -632,8 +646,24 @@ PREFUNCDEF BOOL EFuncName_Request_TextResultCharp(char **charp)
 // Return TRUE to takeover launching and prevent all other further launching
 // or FALSE to continue launching after we return
 //
-PREFUNCDEF BOOL EFuncName_Allow_ProcessTrigger(const char* /*destbuf_path*/, const char* /*destbuf_caption*/, const char* /*destbuf_groupname*/, int /*pluginid*/, int /*thispluginid*/, int /*score*/, E_EntryTypeT /*entrytype*/, void* /*tagvoidp*/, BOOL* /*closeafterp*/)
+PREFUNCDEF BOOL EFuncName_Allow_ProcessTrigger(const char* destbuf_path, const char* /*destbuf_caption*/, const char* /*destbuf_groupname*/, int pluginid, int thispluginid, int /*score*/, E_EntryTypeT /*entrytype*/, void* /*tagvoidp*/, BOOL* /*closeafterp*/)
 {
+    if(thispluginid == pluginid)
+    {
+        if((strcmp(destbuf_path, "farrmru.objecttechnology.com") == 0) ||
+           (strcmp(destbuf_path, "www.hamradiousa.net") == 0) ||
+           (strcmp(destbuf_path, "www.donationcoder.com/Forums/bb/index.php?action=dlist;sa=search;search=149485;fields=uid") == 0))
+        {
+            char launchString[512];
+            strcpy(launchString, "http://");
+            strcat(launchString, destbuf_path);
+
+            callbackfp_set_strval(hostptr, "launch", launchString);
+
+            return TRUE;
+        }
+    }
+
     // does this plugin want to take over launching of this result?
     return FALSE;
 }
