@@ -3,21 +3,17 @@
     <!-- basic info to display in updater-->
     <Label>FarrMostRecentlyUsed</Label>
     <IconFile>FarrMRU.ico</IconFile>
-    
     <!-- version info of locally installed current version, and simple remote version file -->
-    <Version>0.5.1</Version>
+    <Version>1.0.0</Version>
     <VersionFileRemote>http://farrplugins.objecttechnology.com/farrmru/versioninfo.xml</VersionFileRemote>
-   
     <!-- where to get more info about the app remotely, only queried once an update is discovered -->
-    <InfoFileRemote></InfoFileRemote>
+    <InfoFileRemote />
     <WebPage>http://farrmru.objecttechnology.com</WebPage>
-
-     <!-- ok how to conduct updates; could be: "Run" (download and run program), or "Visit" (visit website), or "Unzip" (download zip and unpack over files) -->
+    <!-- ok how to conduct updates; could be: "Run" (download and run program), or "Visit" (visit website), or "Unzip" (download zip and unpack over files) -->
     <UpdateMethod>unzip</UpdateMethod>
     <SignalForUpdate>FindAndRunRobot.exe</SignalForUpdate>
-    <CloseForUpdate></CloseForUpdate>
+    <CloseForUpdate />
     <BaseDirectory>Find and Run Robot</BaseDirectory>
-
     <UpdateFile>http://farrplugins.objecttechnology.com/farrmru/FarrMostRecentlyUsed.zip</UpdateFile>
-    <InstallDirectory>Plugins\FarrMostRecentlyUsed</InstallDirectory> 
-</Local> 
+    <InstallDirectory>Plugins\FarrMostRecentlyUsed</InstallDirectory>
+</Local>

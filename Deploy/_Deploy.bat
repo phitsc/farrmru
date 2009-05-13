@@ -1,2 +1,2 @@
-C:\Projects\UpdateVersion\Deploy\UpdateVersion.exe -s c:\Projects\FarrMRU\Deploy\FarrMostRecentlyUsed.dll -t c:\Projects\FarrWindowsSearch\Deploy\FarrWindowsSearch.dcupdate -t c:\Projects\FarrMRU\Deploy\versioninfo.xml
-"C:\Program Files\7-Zip\7z.exe" a FarrMostRecentlyUsed.zip c:\Projects\FarrMRU\Deploy\*.* -r -xr!.svn -x!versioninfo.xml -x!_Deploy.bat -x!*.zip -tzip
+C:\Projects\UpdateVersion\Deploy\UpdateVersion.exe -s c:\Projects\FarrMostRecentlyUsed\Deploy\FarrMostRecentlyUsed.dll -t c:\Projects\FarrMostRecentlyUsed\Deploy\FarrMostRecentlyUsed.dcupdate -t c:\Projects\FarrMostRecentlyUsed\Deploy\versioninfo.xml
+"C:\Program Files\7-Zip\7z.exe" a FarrMostRecentlyUsed.zip c:\Projects\FarrMostRecentlyUsed\Deploy\*.* -r -xr!.svn -x!versioninfo.xml -x!_Deploy.bat -x!*.zip -tzip
