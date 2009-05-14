@@ -1,6 +1,6 @@
 ===============================================================================
 
-FARR MostRecentlyUsed plugin - 1.0.0 - 13. May 2009
+FARR MostRecentlyUsed plugin - 1.0.1 - 14. May 2009
 
 (c) 2009 Philipp Tschannen
 
@@ -131,6 +131,9 @@ This plugin is provided 'as is'. No warranty of any kind is expressed or implied
 
 Version history
 =====================
+1.0.1
+- Updated .config file
+
 1.0.0
 - Added / Changed the following applications:
   - Added Visio 2007 to Office 2007 (+office7)
