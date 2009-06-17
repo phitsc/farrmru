@@ -10,6 +10,8 @@
 #include <list>
 #include <set>
 
+#include <atlbase.h>
+
 class RegistryKey;
 
 //-----------------------------------------------------------------------
