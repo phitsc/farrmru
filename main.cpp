@@ -28,6 +28,11 @@ int main(int argc, char* argv[])
             std::string searchString;
             for(int index = 1; index < argc; ++index)
             {
+                if(!searchString.empty())
+                {
+                    searchString += " ";
+                }
+
                 searchString += argv[index];
             }
 
