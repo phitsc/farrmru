@@ -24,6 +24,8 @@ void Options::update(const OptionsFile& optionsFile)
     showGroupName = optionsFile.getValue("ShowGroupName", false);
 
     userDefinedGroups = optionsFile.getValue("UserDefinedGroups", "");
+
+    lbcFormatting = (LbcFormatting)optionsFile.getValue("LbcFormatting", (long)LbcFormatting_None);
 }
 
 //-----------------------------------------------------------------------

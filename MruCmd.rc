@@ -53,8 +53,8 @@ END
 //
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION 1,0,1,0
- PRODUCTVERSION 1,0,1,0
+ FILEVERSION 1,1,0,0
+ PRODUCTVERSION 1,1,0,0
  FILEFLAGSMASK 0x37L
 #ifdef _DEBUG
  FILEFLAGS 0x21L
@@ -70,13 +70,13 @@ BEGIN
         BLOCK "000004b0"
         BEGIN
             VALUE "FileDescription", "Most Recently Used command line application"
-            VALUE "FileVersion", "1.0.1"
+            VALUE "FileVersion", "1.1.0"
             VALUE "InternalName", "MruCmd"
             VALUE "LegalCopyright", "(c) 2009 Philipp Tschannen"
             VALUE "OriginalFilename", "MruCmd.exe"
             VALUE "ProductName", "MruCmd"
-            VALUE "ProductVersion", "1.0.1"
-            VALUE "SpecialBuild", "17. June 2009"
+            VALUE "ProductVersion", "1.1.0"
+            VALUE "SpecialBuild", "18. June 2009"
         END
     END
     BLOCK "VarFileInfo"

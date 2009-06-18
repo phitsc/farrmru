@@ -45,6 +45,14 @@ public:
 
 //-----------------------------------------------------------------------
 
+class IsFormatting
+{
+public:
+    bool operator()(const Item& item) const;
+};
+
+//-----------------------------------------------------------------------
+
 class RemoveItemsStage1
 {
 public:

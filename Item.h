@@ -14,6 +14,7 @@ struct Item
         Type_Folder,
         Type_URL,
         Type_Alias,
+        Type_Formatting
     };
 
     Item(const std::string& groupName_, const std::string& path_, Type type_, 

@@ -42,6 +42,13 @@ bool CompareName::operator ()(const Item& leftItem, const Item& rightItem) const
 
 //-----------------------------------------------------------------------
 
+bool IsFormatting::operator()(const Item& item) const
+{
+    return (item.type == Item::Type_Formatting);
+}
+
+//-----------------------------------------------------------------------
+
 RemoveItemsStage1::RemoveItemsStage1(const Options& options)
 :_options(options)
 {
@@ -51,8 +58,8 @@ RemoveItemsStage1::RemoveItemsStage1(const Options& options)
 
 bool RemoveItemsStage1::operator()(const Item& item) const
 {
-    // pass through web stuff
-    if(item.type != Item::Type_URL)
+    // pass through web stuff and formatting
+    if((item.type != Item::Type_URL) && (item.type != Item::Type_Formatting))
     {
         const bool isUNCFile = isUNCPath(item.path);
 
@@ -203,15 +210,18 @@ void tolower(std::string& toConvert)
 
 bool RemoveDuplicates::operator()(const Item& item) const
 {
-    std::string path = item.path;
-    tolower(path);
-    if(_items.find(path) != _items.end())
+    if(item.type != Item::Type_Formatting)
     {
-        return true;
-    }
-    else
-    {
-        _items.insert(path);
+        std::string path = item.path;
+        tolower(path);
+        if(_items.find(path) != _items.end())
+        {
+            return true;
+        }
+        else
+        {
+            _items.insert(path);
+        }
     }
 
     return false;

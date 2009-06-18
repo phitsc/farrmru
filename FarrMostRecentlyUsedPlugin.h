@@ -96,8 +96,8 @@ private:
 
     // sort items
     void sortItems(ItemList& itemList);
-    static void sortItemsAlphabetically(ItemList& itemList);
-    static void sortItemsByFileTime(ItemList& itemList, int fileTimeType);
+    static void sortItemsAlphabetically(ItemList& itemList, bool withinGroups);
+    static void sortItemsByFileTime(ItemList& itemList, int fileTimeType, bool withinGroups);
 
     // initialisation
     void processConfigFile(const std::string& configFileName);
@@ -108,6 +108,7 @@ private:
                               OrderedStringCollection& groups,
                               OrderedStringCollection& extensions) const;
     void handleForceSortMode(OrderedStringCollection& options);
+    void handleLbcFormatting(OrderedStringCollection& options);
 
     //
     OrderedStringCollection _farrOptions;
@@ -162,7 +163,8 @@ private:
     OptionsFile _optionsFile;
     Options     _options;
     
-    Options::SortMode _sortModeCurrentSearch;
+    Options::SortMode      _sortModeCurrentSearch;
+    Options::LbcFormatting _lbcFormatting;
 
     GroupNameToGroup _groupNameToGroup;
 

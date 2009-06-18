@@ -33,6 +33,15 @@ struct Options
     };
     SortMode sortMode;
 
+    enum LbcFormatting
+    {
+        LbcFormatting_None = 0,
+        LbcFormatting_Separate,
+        LbcFormatting_Group
+    };
+    LbcFormatting lbcFormatting;
+
+
     // Display
     bool showGroupName;
 

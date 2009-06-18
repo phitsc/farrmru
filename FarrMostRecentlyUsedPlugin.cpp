@@ -28,6 +28,9 @@ const char* Option_DebugLevel0 = "debug0!";
 const char* Option_DebugLevel1 = "debug1!";
 const char* Option_DebugLevel2 = "debug2!";
 
+const char* Option_LBC_Separate = "lbcseparate";
+const char* Option_LBC_Group    = "lbcgroup";
+
 const char* MyRecentDocuments_GroupName = "recent";
 
 //-----------------------------------------------------------------------
@@ -67,6 +70,9 @@ _debugLevel(Debug_Level0)
     _mruOptions.insert(Option_DebugLevel0);
     _mruOptions.insert(Option_DebugLevel1);
     _mruOptions.insert(Option_DebugLevel2);
+
+    _mruOptions.insert(Option_LBC_Separate);
+    _mruOptions.insert(Option_LBC_Group);
 
     //
     const std::string configFileName = modulePath + "\\FarrMostRecentlyUsed.config";
@@ -253,6 +259,7 @@ void FarrMostRecentlyUsedPlugin::search(const char* rawSearchString)
 
         _sortModeCurrentSearch = _options.sortMode;
         handleForceSortMode(options);
+        handleLbcFormatting(options);
 
         if(_rebuildItemCache)
         {
@@ -385,6 +392,23 @@ void FarrMostRecentlyUsedPlugin::handleForceSortMode(OrderedStringCollection& op
     options.erase(Option_ByDate);
     options.erase(Option_ByMod);
     options.erase(Option_ByCreate);
+}
+
+//-----------------------------------------------------------------------
+
+void FarrMostRecentlyUsedPlugin::handleLbcFormatting(OrderedStringCollection& options)
+{
+    if(options.find(Option_LBC_Separate) != options.end())
+    {
+        _lbcFormatting = Options::LbcFormatting_Separate;
+    }
+    else if(options.find(Option_LBC_Group) != options.end())
+    {
+        _lbcFormatting = Options::LbcFormatting_Group;
+    }
+
+    options.erase(Option_LBC_Separate);
+    options.erase(Option_LBC_Group);
 }
 
 //-----------------------------------------------------------------------
@@ -532,6 +556,17 @@ void FarrMostRecentlyUsedPlugin::addMyRecentDocuments()
     {
         debugOutputMessage(Debug_Level1, _recentFolder.c_str());
 
+        switch(_lbcFormatting)
+        {
+        case Options::LbcFormatting_Separate:
+            _itemCache.push_back(Item(MyRecentDocuments_GroupName, "-My Recent Documents", Item::Type_Formatting));
+            break;
+
+        case Options::LbcFormatting_Group:
+            _itemCache.push_back(Item(MyRecentDocuments_GroupName, "My Recent Documents /icon=FarrMRU_MyRecentDocuments.ico {", Item::Type_Formatting));
+            break;
+        }
+
         const FileList fileList(_recentFolder, "*.*", FileList::Files);
 
         FileList::const_iterator it = fileList.begin();
@@ -547,6 +582,13 @@ void FarrMostRecentlyUsedPlugin::addMyRecentDocuments()
         }
 
         resolveLinks(_itemCache);
+
+        switch(_lbcFormatting)
+        {
+        case Options::LbcFormatting_Group:
+            _itemCache.push_back(Item(MyRecentDocuments_GroupName, "}", Item::Type_Formatting));
+            break;
+        }
 
         //debugOutputResultList(_itemCache);
     }
@@ -593,6 +635,9 @@ void FarrMostRecentlyUsedPlugin::addGroup(const GroupNameToGroup::const_iterator
 {
     const std::string& groupName = typeIterator->first;
     const Group& group = typeIterator->second;
+
+    const ItemList::size_type oldCount = itemList.size();
+
     const RegistryPaths& registryPaths = group.registryPaths;
 
     RegistryPaths::const_iterator registryPathIterator = registryPaths.begin();
@@ -602,6 +647,39 @@ void FarrMostRecentlyUsedPlugin::addGroup(const GroupNameToGroup::const_iterator
         const std::string& registryPath = *registryPathIterator;
 
         addMRUs(groupName, registryPath, itemList);
+    }
+
+    const ItemList::size_type newCount = itemList.size();
+
+    if(newCount != oldCount)
+    {
+        ItemList::iterator end = itemList.begin();
+        std::advance(end, oldCount);
+
+        switch(_lbcFormatting)
+        {
+        case Options::LbcFormatting_Separate:
+            {
+                const std::string path = "-" + group.description;
+                itemList.insert(end, Item(groupName, path, Item::Type_Formatting));
+            }
+            break;
+
+        case Options::LbcFormatting_Group:
+            {
+                std::string path = group.description;
+                
+                if(!group.pathToIconFile.empty())
+                {
+                    path += " /icon=" + group.pathToIconFile;
+                }
+                
+                path += " {";
+                itemList.insert(end, Item(groupName, path, Item::Type_Formatting));
+                itemList.push_back(Item(groupName, "}", Item::Type_Formatting));
+            }
+            break;
+        }
     }
 }
 
@@ -1072,7 +1150,7 @@ void FarrMostRecentlyUsedPlugin::addMRUs_NotepadPlusPlus(const std::string& grou
             }
 
             updateFileTimes(temporaryList);
-            sortItemsByFileTime(temporaryList, CompareFiletime::LastAccessed);
+            sortItemsByFileTime(temporaryList, CompareFiletime::LastAccessed, false);
 
             itemList.insert(itemList.end(), temporaryList.begin(), temporaryList.end());
         }
@@ -1225,41 +1303,106 @@ void FarrMostRecentlyUsedPlugin::extractSearchOptions(std::string& searchString,
 
 void FarrMostRecentlyUsedPlugin::sortItems(ItemList& itemList)
 {
+    const bool withinGroups = (_lbcFormatting != Options::LbcFormatting_None);
+
     switch(_sortModeCurrentSearch)
     {
     case Options::Sort_TimeLastAccessed:
-        sortItemsByFileTime(itemList, CompareFiletime::LastAccessed);
+        sortItemsByFileTime(itemList, CompareFiletime::LastAccessed, withinGroups);
         break;
 
     case Options::Sort_TimeLastModified:
-        sortItemsByFileTime(itemList, CompareFiletime::LastModifed);
+        sortItemsByFileTime(itemList, CompareFiletime::LastModifed, withinGroups);
         break;
 
     case Options::Sort_TimeCreated:
-        sortItemsByFileTime(itemList, CompareFiletime::Created);
+        sortItemsByFileTime(itemList, CompareFiletime::Created, withinGroups);
         break;
 
     case Options::Sort_Alphabetically:
-        sortItemsAlphabetically(itemList);
+        sortItemsAlphabetically(itemList, withinGroups);
         break;
-
     }
 }
 
 //-----------------------------------------------------------------------
 
-void FarrMostRecentlyUsedPlugin::sortItemsByFileTime(ItemList& itemList, int fileTimeType)
+void FarrMostRecentlyUsedPlugin::sortItemsByFileTime(ItemList& itemList, int fileTimeType, bool withinGroups)
 {
     CompareFiletime compareFiletime((CompareFiletime::FileTimeType)fileTimeType);
-    itemList.sort(compareFiletime);
+
+    if(withinGroups)
+    {
+        const ItemList::iterator end = itemList.end();
+
+        ItemList::iterator formatStart = std::find_if(itemList.begin(), end, IsFormatting());
+        while(formatStart != end)
+        {
+            ItemList::iterator from = formatStart;
+            ++from;
+            if(from == end)
+            {
+                break;
+            }
+
+            ItemList::iterator formatEnd = std::find_if(from, end, IsFormatting());
+            
+            std::stable_sort(from, formatEnd, compareFiletime);
+
+            if(formatEnd == end)
+            {
+                break;
+            }
+
+            ++formatEnd;
+
+            formatStart = std::find_if(formatEnd, end, IsFormatting());
+        }
+    }
+    else
+    {
+        itemList.sort(compareFiletime);
+    }
 }
 
 //-----------------------------------------------------------------------
 
-void FarrMostRecentlyUsedPlugin::sortItemsAlphabetically(ItemList& itemList)
+void FarrMostRecentlyUsedPlugin::sortItemsAlphabetically(ItemList& itemList, bool withinGroups)
 {
     CompareName compareName;
-    itemList.sort(compareName);
+
+    if(withinGroups)
+    {
+        const ItemList::iterator end = itemList.end();
+
+        ItemList::iterator formatStart = std::find_if(itemList.begin(), end, IsFormatting());
+        while(formatStart != end)
+        {
+            ItemList::iterator from = formatStart;
+            ++from;
+            if(from == end)
+            {
+                break;
+            }
+
+            ItemList::iterator formatEnd = std::find_if(from, end, IsFormatting());
+            
+            std::stable_sort(from, formatEnd, compareName);
+
+            if(formatEnd == end)
+            {
+                break;
+            }
+
+            ++formatEnd;
+
+            formatStart = std::find_if(formatEnd, end, IsFormatting());
+        }
+    }
+    else
+    {
+        itemList.sort(compareName);
+    }
 }
 
 //-----------------------------------------------------------------------
