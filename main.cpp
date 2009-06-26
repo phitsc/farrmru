@@ -3,6 +3,7 @@
 
 #include <string>
 #include <iostream>
+#include <algorithm>
 
 HINSTANCE dllInstanceHandle = 0;
 
@@ -35,6 +36,8 @@ int main(int argc, char* argv[])
 
                 searchString += argv[index];
             }
+
+            std::replace(searchString.begin(), searchString.end(), '-', '+');
 
             farrMostRecentlyUsedPlugin.search(searchString.c_str());
 
