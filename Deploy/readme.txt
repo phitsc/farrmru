@@ -67,7 +67,7 @@ Filter
 - UNC files : filter out UNC files (files starting with //) from the list
 - Nonexistent files : filter out files that don't exist anymore
 - Don't check existence of UNC files : what it says. faster.
-- Directories : filter our directories
+- Directories : filter out directories
 - Simplified directory check : Treat file names without a . as directories. This speeds up directory checking but can give false positives. Only applies to UNC paths. The simplified directory check method is always used for UNC files if 'Don't check existence of UNC files' is selected.
 
 Sort:
