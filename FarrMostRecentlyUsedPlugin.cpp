@@ -351,8 +351,11 @@ void FarrMostRecentlyUsedPlugin::search(const char* rawSearchString)
                     debugOutputResultList(Debug_Level2, itemList);
                 }
 
-                RemoveDuplicates removeDuplicates;
-                itemList.remove_if(removeDuplicates);
+                if(_lbcFormatting == Options::LbcFormatting_None)
+                {
+                    RemoveDuplicates removeDuplicates;
+                    itemList.remove_if(removeDuplicates);
+                }
 
                 debugOutputNumber(Debug_Level1, "After filter stage 3. Item count", itemList.size());
                 debugOutputResultList(Debug_Level2, itemList);
