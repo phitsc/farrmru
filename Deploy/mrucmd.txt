@@ -13,29 +13,29 @@ MruCmd is a command line tool to list your most recently used files. It can be u
 
 Usage
 =====================
-MruCmd supports just the same modifier keywords as the FarrMostRecentlyUsed plugin, so make sure to read the readme.txt containing all the details. To use MruCmd you pass the commands and keyoards you would enter into the FARR input search window (when using the FarrMRU plugin) as arguments to MruCmd.exe.
+MruCmd supports just the same modifier keywords as the FarrMostRecentlyUsed plugin, so make sure to read the readme.txt containing all the details. To use MruCmd you pass the commands and keywords you would enter into the FARR input search window (when using the FarrMRU plugin) as arguments to MruCmd.exe.
 
 There are two things to note:
 1. While the FarrMRU plugin requires you to start keywords with a +, you can also start them with a - for MruCmd
 2. MruCmd supports two additional keywords:
-   -lbcseparate : will separate your last recently used files with text header separators
-   -lbcgroup    : will group your last recently used files in submenus
+   -lbcseparate : will separate your most recently used files with text header separators
+   -lbcgroup    : will group your most recently used files in submenus
    
  
 Examples
 =====================
 
-1. List all your recently used files and group them in submenus:
+1. List all your most recently used files and group them in submenus:
 
    MruCmd.exe mrua -lbcgroup
 
 
-2. List all your Office and PDF files and separate them with headers:
+2. List all your recently used Office and PDF files and separate them with headers:
 
    MruCmd.exe mrup -office3 -office7 -foxit -lbcseparate
 
 
-3. List all your Visual Studio 2008 files with farr in their file names:
+3. List all your recently used Visual Studio 2008 files with farr in their file names:
 
    MruCmd.exe mrup -msvc9 farr
 
@@ -45,7 +45,7 @@ Examples
    MruCmd.exe mrum -byname
 
    
-5. List all your most recently used .h and .cpp files
+5. List all your recently used .h and .cpp files
 
    MruCmd.exe mrua -.h -.cpp
    
