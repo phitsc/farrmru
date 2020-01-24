@@ -1,5 +1,6 @@
 # FARR MostRecentlyUsed plugin
 
+https://www.donationcoder.com/forum/index.php?topic=13899.0
 
 ## Description
 
@@ -8,7 +9,7 @@ Shows the contents of the 'My Recent Documents' folder or a list of most recentl
 
 ## Installation
 
-Copy all files into the FarrMostRecentlyUsed plugin directory (usually C:\Program Files\FindAndRunRobot\Plugins\FarrMostRecentlyUsed) and restart FARR.
+Copy all files into the FarrMostRecentlyUsed plugin directory (usually `C:\Program Files\FindAndRunRobot\Plugins\FarrMostRecentlyUsed`) and restart FARR.
 
 
 ## Usage
@@ -22,38 +23,38 @@ Use the following aliases to give you a list of your most recently used files:
 - mrul : Show a list of installed and supported applications for further selection
 
 Use the following modifier keywords to change the search:
-+byname   : Force sorting by name
-+bydate   : Force sorting by date last accessed
-+bymod    : Force sorting by date last modified
-+bycreate : Force sorting by date created
-+.[ext]   : Filter results by file extension [ext]. More than one can be used, e.g. +.h +.cpp
+* +byname   : Force sorting by name
+* +bydate   : Force sorting by date last accessed
+* +bymod    : Force sorting by date last modified
+* +bycreate : Force sorting by date created
+* +.[ext]   : Filter results by file extension [ext]. More than one can be used, e.g. +.h +.cpp
 
 To show a list of most recently used files for selected applications, use the following modifiers:
-+acrobat  : Adobe Acrobat Reader (only 9 currently)
-+akelpad  : Akelpad
-+audacity : Audacity
-+dwcs3    : Dreamweaver CS3
-+foxit    : Foxit Reader
-+icofx    : IcoFX (only 1.6 currently)
-+km       : KMPlayer
-+msvc8    : MS Visual Studio 2005
-+msvc9    : MS Visual Studio 2008
-+npp      : Notepad++
-+office3  : Microsoft Office 2003
-+office7  : Microsoft Office 2007
-+oo2      : OpenOffice 2.0
-+paint    : Paint
-+photoe   : Photoshop Elements (only 5.0 currently)
-+snag     : SnagIt
-+sql      : SQL Server
-+ted      : TED Notepad
-+winrar   : WinRAR
-+winuae   : WinUAE
-+wmp      : Windows Media Player
-+wordpad  : Wordpad
+* +acrobat  : Adobe Acrobat Reader (only 9 currently)
+* +akelpad  : Akelpad
+* +audacity : Audacity
+* +dwcs3    : Dreamweaver CS3
+* +foxit    : Foxit Reader
+* +icofx    : IcoFX (only 1.6 currently)
+* +km       : KMPlayer
+* +msvc8    : MS Visual Studio 2005
+* +msvc9    : MS Visual Studio 2008
+* +npp      : Notepad++
+* +office3  : Microsoft Office 2003
+* +office7  : Microsoft Office 2007
+* +oo2      : OpenOffice 2.0
+* +paint    : Paint
+* +photoe   : Photoshop Elements (only 5.0 currently)
+* +snag     : SnagIt
+* +sql      : SQL Server
+* +ted      : TED Notepad
+* +winrar   : WinRAR
+* +winuae   : WinUAE
+* +wmp      : Windows Media Player
+* +wordpad  : Wordpad
 
 (built-in group for My Recent Documents)
-+recent  : My Recent Documents
+* +recent  : My Recent Documents
 
 
 ## Options
@@ -85,17 +86,18 @@ The config file has the following format:
 RegistryKeyToMRUList or PathToIniFilePlusSectionAndKey
 
 RegistryKeyToMRUList typically looks like this:
-HKEY_CURRENT_USER\Software\Application Name\Recent File List
+`HKEY_CURRENT_USER\Software\Application Name\Recent File List`
 
 PathToIniFilePlusSectionAndKey typically looks like this:
-INI_FILE\PathToIniFile.ini|Section|BaseKeyName
+`INI_FILE\PathToIniFile.ini|Section|BaseKeyName`
 within the .ini file you find something like this:
-[Section]
-BaseKeyName1=c:\blah\mru1.txt
-BaseKeyName2=c:\blah\mru2.txt
+
+  [Section]
+  BaseKeyName1=c:\blah\mru1.txt
+  BaseKeyName2=c:\blah\mru2.txt
 
 
-FarrMostRecentlyUsed.user has the same format as FarrMostRecentlyUsed.config but will never be overwritten with new updates of the plugin. Put your own stuff in here. 
+FarrMostRecentlyUsed.user has the same format as FarrMostRecentlyUsed.config but will never be overwritten with new updates of the plugin. Put your own stuff in here.
 
 Modifier entries in FarrMostRecentlyUsed.user override identical ones in FarrMostRecentlyUsed.config. This can be used for example if you choose to install an application in a location other than the default (e.g. not in the default 'Program Files' folder). Just duplicate the respective section in your FarrMostRecentlyUsed.user and change the icon path.
 
@@ -114,6 +116,6 @@ Clearing the 'Recent Items' list on Windows Vista will not make these files disa
 
 ## Credits
 
-Using the TinyXml parser ( www.sourceforge.net/projects/tinyxml )
+Using the TinyXml parser ( https://sourceforge.net/projects/tinyxml/ )
 
 Special thanks to hamradio for the wonderful icons!
