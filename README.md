@@ -92,9 +92,9 @@ PathToIniFilePlusSectionAndKey typically looks like this:
 `INI_FILE\PathToIniFile.ini|Section|BaseKeyName`
 within the .ini file you find something like this:
 
-  [Section]
-  BaseKeyName1=c:\blah\mru1.txt
-  BaseKeyName2=c:\blah\mru2.txt
+    [Section]
+    BaseKeyName1=c:\blah\mru1.txt
+    BaseKeyName2=c:\blah\mru2.txt
 
 
 FarrMostRecentlyUsed.user has the same format as FarrMostRecentlyUsed.config but will never be overwritten with new updates of the plugin. Put your own stuff in here.
